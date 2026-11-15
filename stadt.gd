@@ -17,6 +17,14 @@ const BUECHEREI_POS := Vector2(-33, -40)   ## Front nach Osten zur Zauber-Allee
 const MUSEUM_POS := Vector2(-38, -182)     ## Front nach Norden zur Tower-Allee
 const RATHAUS_POS := Vector2(42, 0)        ## Front nach Westen zur Zauber-Allee, mit Vorplatz
 const KLINIK_POS := Vector2(62, -56)       ## Front nach Sueden zur Altstadtgasse, Vorfahrt davor
+## 6twelve-Filiale am Suedostrand (levels/sechs_zwoelf.gd, um 180 Grad gedreht: Eingang und Parkplatz nach Norden zum Schattenkai)
+## und geheimer Abgang zum Untergrund-Komplex (levels/untergrund.gd)
+const LADEN_POS := Vector2(250, 245)
+const LADEN_DREH := 180.0
+const SCHACHT_LAENGE := 12.2      ## Schacht-Grundflaeche x 0..4, z -4..8,2 ab Abgangspunkt (levels/untergrund.gd)
+const SCHACHT_BREITE := 4.0
+const TERRAIN_SCHACHT_Y := -40.0   ## Gelaendehoehe unter dem Schacht (unter dem Komplex)
+const SCHACHT_VORLAUF := 4.0
 const TANK_RADIUS := 13.0
 const TANK_STUETZE_H := 8.0
 const TANK_STUETZE_ABSTAND := 8.0   ## Stuetzen stehen bei +-8 m (Diagonale 11,3 m, innerhalb des Tankradius)
@@ -162,6 +170,7 @@ func _ready() -> void:
 	_burger()
 	_neonmarkt()
 	_oeffentliche_gebaeude()
+	_laden_und_abgang()
 	_strassen_deko()
 	_niko_kulisse()
 	_gurkenfeld()
@@ -483,6 +492,7 @@ func _sperrzonen() -> void:
 		Rect2(-59, -196, 42, 27),     # Museum
 		Rect2(14, -21, 44, 42),       # Stadtverwaltung mit Vorplatz
 		Rect2(40, -70, 48, 34),       # Stadtklinik mit Rettungsvorfahrt
+		Rect2(214, 204, 98, 82),      # 6twelve mit Parkplatz und Zufahrt
 	]
 	linien = [
 		[_fluss_ost(), FLUSS_SPERRE],
@@ -676,7 +686,14 @@ func _fluss_polygone() -> Array[PackedVector2Array]:
 ## Ebene Flaeche auf Hoehe y: Rechteck minus Flusslaeufe, als ein Mesh (Normalen nach oben).
 ## Mit `kollision` bekommt sie einen Dreiecks-Kollisionskoerper.
 func _flaeche(bereich: Rect2, y: float, mat: Material, kollision: bool) -> MeshInstance3D:
-	var teile: Array[PackedVector2Array] = [PackedVector2Array([bereich.position, Vector2(bereich.end.x, bereich.position.y), bereich.end, Vector2(bereich.position.x, bereich.end.y)])]
+	var teile: Array[PackedVector2Array] = []
+	var loch := _luken_loch()
+	if bereich.encloses(loch) and y == 0.0:
+		# Die Stadtplatte bekommt das Loch fuer die Abgangs-Luke: vier Streifen drumherum statt einer Flaeche
+		for r in _rahmen_streifen(bereich, loch):
+			teile.append(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]))
+	else:
+		teile.append(PackedVector2Array([bereich.position, Vector2(bereich.end.x, bereich.position.y), bereich.end, Vector2(bereich.position.x, bereich.end.y)]))
 	for fluss in _fluss_polygone():
 		var rest: Array[PackedVector2Array] = []
 		for t in teile:
@@ -685,6 +702,35 @@ func _flaeche(bereich: Rect2, y: float, mat: Material, kollision: bool) -> MeshI
 					rest.append(stueck)
 		teile = rest
 	return _polygon_mesh(teile, y, mat, kollision)
+
+
+## Vier Rechtecke, die `aussen` ohne `loch` abdecken (Nord, Sued, West, Ost).
+func _rahmen_streifen(aussen: Rect2, loch: Rect2) -> Array[Rect2]:
+	return [
+		Rect2(aussen.position.x, aussen.position.y, aussen.size.x, loch.position.y - aussen.position.y),
+		Rect2(aussen.position.x, loch.end.y, aussen.size.x, aussen.end.y - loch.end.y),
+		Rect2(aussen.position.x, loch.position.y, loch.position.x - aussen.position.x, loch.size.y),
+		Rect2(loch.end.x, loch.position.y, aussen.end.x - loch.end.x, loch.size.y),
+	]
+
+
+## Ursprung des Abgangs in Weltkoordinaten (obere NW-Ecke des Schachts): die Luke im Laden, in Weltraum gedreht.
+func _abgang_pos() -> Vector2:
+	var sz := load("res://levels/sechs_zwoelf.gd")
+	return LADEN_POS - Vector2(sz.LUKE_X.y, sz.LUKE_Z.y)
+
+
+## Loch in der Stadtplatte (nur ueber der ersten Treppenspur, damit die Luke unauffaellig bleibt).
+func _luken_loch() -> Rect2:
+	var sz := load("res://levels/sechs_zwoelf.gd")
+	var o := _abgang_pos()
+	return Rect2(o.x, o.y, sz.LUKE_X.y - sz.LUKE_X.x, sz.LUKE_Z.y - sz.LUKE_Z.x)
+
+
+## Loch der Sohle: ganze Schachtflaeche (die Waende laufen durch die Sohle).
+func _schacht_loch() -> Rect2:
+	var o := _abgang_pos()
+	return Rect2(o.x - 0.5, o.y - SCHACHT_VORLAUF - 0.5, SCHACHT_BREITE + 1.0, SCHACHT_LAENGE + 1.0)
 
 
 func _polygon_mesh(teile: Array[PackedVector2Array], y: float, mat: Material, kollision: bool) -> MeshInstance3D:
@@ -757,7 +803,8 @@ func _fluesse() -> void:
 	var m_gelaender := _std(Color(0.2, 0.22, 0.26), 0.0, 0.85, 0.35)
 	var m_gel_neon := _std(Color(0.2, 0.9, 1.0), 1.6)
 	# Sohle: eine Platte unter der ganzen Stadt, sichtbar nur in den Flusslaeufen (faengt auch alles auf, was faellt)
-	_box(Vector3(0, -FLUSS_TIEFE - 0.5, 0), Vector3(PLATTE, 1.0, PLATTE), m_sohle)
+	for r in _rahmen_streifen(Rect2(-PLATTE / 2.0, -PLATTE / 2.0, PLATTE, PLATTE), _schacht_loch()):
+		_box(Vector3(r.get_center().x, -FLUSS_TIEFE - 0.5, r.get_center().y), Vector3(r.size.x, 1.0, r.size.y), m_sohle)
 	var linien_f: Array[PackedVector2Array] = [_fluss_ost(), _fluss_west()]
 	var polys := _fluss_polygone()
 	var rand := PLATTE / 2.0 - 0.1
@@ -1578,7 +1625,46 @@ func _oeffentliche_gebaeude() -> void:
 	_haus("res://levels/krankenhaus.gd", KLINIK_POS, 0.0)
 
 
-## Schwebende Fern-Kulisse hinter der Ostgrenze (levels/niko_kulisse.gd)
+## 6twelve-Filiale am Suedostrand, Zufahrt vom Schattenkai und der geheime Untergrund-Komplex darunter
+func _laden_und_abgang() -> void:
+	# Zufahrt: Asphaltstreifen vom Schattenkai zum Parkplatz
+	_flaeche(Rect2(LADEN_POS.x - 3.0, 204.0, 14.0, 37.0), 0.06, _aussen_mat("strasse_asphalt", STRASSE_KACHEL, Color(0.28, 0.28, 0.3), 0.0), false)
+	_haus_skript("res://levels/sechs_zwoelf.gd", Vector3(LADEN_POS.x, 0.0, LADEN_POS.y), LADEN_DREH)
+	var o := _abgang_pos()
+	_haus_skript("res://levels/untergrund.gd", Vector3(o.x, 0.0, o.y), 0.0)
+	_terrain_loch.call_deferred()
+
+
+## Das Terrain3D-Gelaende liegt unter der Stadtplatte bei y -1,5 und wuerde den Schacht blockieren:
+## Dort wird die Hoehenkarte tief abgesenkt (Rand je ein Pixel mehr als die Schachtflaeche); ein Kontrollkarten-Loch
+## liess die Kollision stehen, abgesenkte Hoehen nicht.
+func _terrain_loch() -> void:
+	var t := get_node_or_null("../Terrain")
+	if t == null:
+		return
+	var daten = t.get_data()
+	if daten == null:
+		return
+	var r := _schacht_loch().grow(float(t.vertex_spacing))
+	var x := r.position.x
+	while x <= r.end.x:
+		var z := r.position.y
+		while z <= r.end.y:
+			daten.set_height(Vector3(x, 0.0, z), TERRAIN_SCHACHT_Y)
+			z += t.vertex_spacing
+		x += t.vertex_spacing
+	daten.update_maps(Terrain3DRegion.TYPE_HEIGHT, true, false)
+
+
+func _haus_skript(skript: String, pos: Vector3, dreh: float) -> void:
+	var n := Node3D.new()
+	n.set_script(load(skript))
+	n.position = pos
+	n.rotation_degrees.y = dreh
+	add_child(n)
+
+
+## Fern-Kulisse hinter der Ostgrenze (levels/niko_kulisse.gd)
 func _niko_kulisse() -> void:
 	var k := Node3D.new()
 	k.set_script(load("res://levels/niko_kulisse.gd"))

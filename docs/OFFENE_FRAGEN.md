@@ -78,3 +78,6 @@ Entschieden (2026-11-07): Iggy hat das Grimoire zerrissen, weil Magie-Strom sein
 72. Frosty-Pack: Es lag keine Lizenzdatei bei. Nicht verbaut sind `pipes` (24 MB), `ice` und `walls_and_floors` (Fassaden-Bausteine, koennten die Gebaeude der Neustadt aufwerten). Die Props sind zentimeter- bis dezimetergross und taugen als Einrichtung (Buero, Labor), nicht als Stadtmoebel. Ausgestattet ist bisher nur die Klinik.
 73. Niko-Kulisse: steht jetzt auf dem Hang bei x 455 statt zu schweben. Soll sie ganz entfallen oder weiter nach hinten? (Aufruf in `stadt.gd: _niko_kulisse` auskommentierbar.)
 74. Scanner im Tower: Sollen Maschinen ausserhalb des Turms (Synth-Bots auf der Strasse) auch am Eingang abgewiesen werden, oder reicht der Scanner vor dem Aufzug?
+75. Untergrund-Komplex: Er ist nur Kulisse (keine Gegner, keine Quest). Was soll dort passieren? Die Aliens (Chrysalis, Scolitex) stehen als Platzhalter ohne Verhalten.
+76. 6twelve: Die Lizenz des Modells ist unbekannt. Vor einem oeffentlichen Push pruefen, ob `imported_models/6twelve` ins Repo darf (der Ordner ist noch nicht in `.gitignore`).
+77. Der Laden hat kein Warensortiment zum Kaufen und keinen Verkaeufer-NPC. Gewuenscht?
