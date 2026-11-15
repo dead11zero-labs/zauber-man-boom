@@ -656,7 +656,7 @@ func _treppe() -> void:
 
 
 func _spielecke() -> void:
-	# Lego-Spielplatz hinten links: Gummiboden, Bausteine mit Noppen, Turm mit Rutsche
+	# Lego-Spielplatz hinten links: Gummiboden, Bausteine mit Noppen, Turm
 	var n := Node3D.new()
 	n.position = Vector3(-13.0, 0.3, -2.5)
 	add_child(n)
@@ -672,14 +672,7 @@ func _spielecke() -> void:
 				noppe.reparent(n, false)
 	# Dach mit Fahne
 	_box(Vector3(-1.4, 3.6, -1.5), Vector3(3.4, 0.15, 1.8), farben[0], false, n)
-	# Rutsche: faengt oben am Turm an (y 3.2) und endet am Boden
-	var rut := Node3D.new()
-	rut.position = Vector3(0.9, 1.75, 0.3)
-	rut.rotation_degrees.x = 39.0   # +x: faellt nach +z ab
-	n.add_child(rut)
-	_box(Vector3(0, 0, 0), Vector3(1.2, 0.12, 4.8), farben[1], false, rut)
-	for sx in [-0.6, 0.6]:
-		_box(Vector3(sx, 0.18, 0), Vector3(0.1, 0.3, 4.8), m["cyan"], false, rut)
+	# (Die schraege Rutsche am Turm ist entfernt: sie wirkte wie eine Plattform neben der Treppe.)
 	# Bausteine zum Rumliegen
 	for p in [Vector3(1.8, 0.45, 2.2), Vector3(2.9, 0.45, 2.6), Vector3(0.0, 0.45, 2.6), Vector3(-2.4, 0.45, 2.0), Vector3(-1.2, 0.45, 1.0)]:
 		var f: StandardMaterial3D = farben[int(absf(p.x * 3.0)) % 4]

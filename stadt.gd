@@ -163,6 +163,7 @@ func _ready() -> void:
 	_neonmarkt()
 	_oeffentliche_gebaeude()
 	_strassen_deko()
+	_niko_kulisse()
 	_gurkenfeld()
 	_floronia()
 	_viertel_bauen()
@@ -221,7 +222,7 @@ func _modelle_schatten() -> void:
 			continue
 		stapel.append_array(n.get_children())
 		var mi := n as MeshInstance3D
-		if mi != null and mi.mesh != null and mi.mesh.resource_path.begins_with(MODELL_ORDNER):
+		if mi != null and mi.mesh != null and mi.mesh.resource_path.begins_with(MODELL_ORDNER) and not mi.mesh.resource_path.contains("niko_stadt"):
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 
 
@@ -1572,6 +1573,13 @@ func _oeffentliche_gebaeude() -> void:
 	_haus("res://levels/museum.gd", MUSEUM_POS, 180.0)
 	_haus("res://levels/rathaus.gd", RATHAUS_POS, -90.0)
 	_haus("res://levels/krankenhaus.gd", KLINIK_POS, 0.0)
+
+
+## Schwebende Fern-Kulisse hinter der Ostgrenze (levels/niko_kulisse.gd)
+func _niko_kulisse() -> void:
+	var k := Node3D.new()
+	k.set_script(load("res://levels/niko_kulisse.gd"))
+	add_child(k)
 
 
 ## Hydranten und kleine Baustellen entlang der Strassen (levels/strassen_deko.gd)

@@ -7,6 +7,7 @@ extends "res://levels/haus.gd"
 ## Wird von stadt.gd (_oeffentliche_gebaeude) erzeugt. Keine Signale, keine Exporte.
 
 const KH := preload("res://levels/krankenhaus_modelle.gd")
+const FP := preload("res://levels/frosty_props.gd")
 
 const B := 32.0
 const T := 20.0
@@ -140,6 +141,14 @@ func _boeden_und_decken() -> void:
 			_box(Vector3(0, y, iz - 0.02), Vector3(ix * 2.0, BRUESTUNG, 0.04), m["sockel"], false)
 
 
+## Kleinteil aus dem Frosty-Set (Bildschirme, Duck-Rechner, Holo-Pflanzen ...) auf einer Flaeche; ohne Kollision.
+func _frosty(teil: String, pos: Vector3, dreh := 0.0) -> void:
+	var n := FP.laden("props/" + teil)
+	n.position = pos
+	n.rotation_degrees.y = dreh
+	add_child(n)
+
+
 ## Notausgangsschild innen an einer Wand (`dreh` wie _schild: 0 = Vorderseite nach +z).
 func _notausgang(pos: Vector3, dreh: float) -> void:
 	_teil("Exit_sign", pos, dreh, false)
@@ -185,6 +194,10 @@ func _erdgeschoss() -> void:
 	_box(Vector3(-0.2, 1.25, -1.2), Vector3(0.03, 0.36, 0.56), m["dunkel"], false, th)
 	_box(Vector3(-0.2, 1.25, 1.1), Vector3(0.03, 0.36, 0.56), m["dunkel"], false, th)
 	_teil("Landline_phone", Vector3(10.5, 1.05, 6.4), 90.0, false)
+	_frosty("Misc_Duckputer_B", Vector3(10.5, 1.08, 4.6), -90.0)
+	_frosty("Misc_CyberScreen_B", Vector3(10.5, 1.08, 5.5), -90.0)
+	_frosty("Misc_PinPad_A", Vector3(10.2, 1.08, 3.3), -90.0)
+	_frosty("Light_Neon_Duck", Vector3(-4.1, 2.3, iz - 0.1), 180.0)
 	_stuhl(Vector3(12.0, 0, 4.2), -90.0, m["dunkel"])
 	_stuhl(Vector3(12.0, 0, 6.4), -90.0, m["dunkel"])
 	_schild("ANMELDUNG", Vector3(9.85, 3.0, 5.2), -90.0, 0.006, Color(0.7, 0.95, 1.0))
@@ -228,6 +241,10 @@ func _erdgeschoss() -> void:
 	_teil("Table", Vector3(-6.0, 0, -5.6), 0.0)
 	_teil("Chair", Vector3(-4.2, 0, -5.4), 90.0)
 	_teil("Iv_bag_holder", Vector3(-9.8, 0, -4.6), 0.0)
+	_frosty("Misc_LaserBlender_Base", Vector3(-6.6, 1.05, -5.6))
+	_frosty("Misc_BatteryCharger_X4_A", Vector3(-5.8, 1.05, -5.9))
+	_frosty("Misc_CyberScreen_A", Vector3(-5.2, 1.05, -5.2), 90.0)
+	_frosty("Misc_CableBox_01_A_Large", Vector3(-8.5, 1.5, -iz + 0.1))
 
 
 func _station() -> void:
@@ -249,10 +266,15 @@ func _station() -> void:
 		_teil("Cabinet_3", Vector3(cx - 1.5, y, -iz + 0.5), 0.0)
 		_teil("Chair", Vector3(cx + 1.8, y, -iz + 4.4), 200.0)
 		_pflanze(Vector3(cx - 2.4, y, -iz + 5.2), 1.0)
+		_frosty("Misc_HoloPlant_01" if i % 2 == 0 else "Misc_HoloPlant_02", Vector3(cx - 1.5, y + 0.79, -iz + 0.45))
+		_frosty("Light_Wall_01_Blue", Vector3(cx, y + 2.6, -iz + 0.05), 0.0)
 	# Stationstresen mit Telefon
 	var th := _theke(Vector3(-1.0, y, 3.0), Vector3(6.0, 1.05, 1.0), 0.0, m["weiss"], m["stahl"])
 	_box(Vector3(0.0, 1.27, 0.2), Vector3(0.6, 0.36, 0.03), m["dunkel"], false, th)
 	_teil("Landline_phone", Vector3(-3.0, y + 1.05, 2.9), 0.0, false)
+	_frosty("Misc_CyberScreen_A", Vector3(-2.4, y + 1.08, 3.1), 0.0)
+	_frosty("Misc_Duckputer_C", Vector3(0.3, y + 1.08, 3.1), 0.0)
+	_frosty("Misc_PinPad_B", Vector3(1.4, y + 1.08, 2.8), 0.0)
 	_stuhl(Vector3(-1.0, y, 2.0), 180.0, m["dunkel"])
 	_stuhl(Vector3(-2.4, y, 2.0), 180.0, m["dunkel"])
 	_schild("STATIONSTRESEN", Vector3(-1.0, y + 2.6, 2.45), 0.0, 0.005, Color(0.7, 0.95, 1.0))
@@ -261,6 +283,9 @@ func _station() -> void:
 	_teil("Chair", Vector3(9.2, y, 6.0), -90.0)
 	_teil("Chair", Vector3(12.8, y, 6.0), 90.0)
 	_teil("Magazine", Vector3(10.3, y + 1.05, 6.0), 10.0, false)
+	_frosty("Misc_PizzaBox_01", Vector3(11.4, y + 1.05, 6.2), 25.0)
+	_frosty("Misc_BeverageCan_01", Vector3(11.9, y + 1.05, 5.5))
+	_frosty("Misc_BeverageCan_02_Crushed_A", Vector3(11.0, y + 1.05, 5.5), 40.0)
 	_teil("Bench", Vector3(6.0, y, 8.6), 180.0)
 	_teil("Wheel_chair", Vector3(-6.0, y, 8.6), 170.0)
 	_teil("Wheel_chair", Vector3(-7.4, y, 8.6), 185.0)
