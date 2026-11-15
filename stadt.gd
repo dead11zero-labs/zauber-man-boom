@@ -11,6 +11,7 @@ const TURM := Vector2(0, -240)
 const BURGER_POS := Vector2(107, 83)
 ## Wassertank-Hochhaus: steht noerdlich der Runenstrasse (frueher z -100, das ragte auf die Fahrbahn)
 const TANK_POS := Vector2(240, -126)
+const POPCORN_POS := Vector2(255, 40)
 const TANK_RADIUS := 13.0
 const TANK_STUETZE_H := 8.0
 const TANK_STUETZE_ABSTAND := 8.0   ## Stuetzen stehen bei +-8 m (Diagonale 11,3 m, innerhalb des Tankradius)
@@ -440,7 +441,7 @@ func _sperrzonen() -> void:
 		[TURM, 50.0],                 # Zauber-Tower + Aufzug
 		[Vector2(-255, 30), 30.0],    # Brezel-Stand
 		[TANK_POS, 30.0],             # Wassertank
-		[Vector2(255, 40), 30.0],     # Popcorn-Labor
+		[POPCORN_POS, 30.0],          # Popcorn-Labor
 		[Vector2(0, 262), 28.0],      # Floronia-Versteck
 		[BURGER_POS, 44.0],           # Sy-Ci Burgers
 		[Vector2(-100, 98), 52.0],    # Neon-Markt 24/7 (Gebaeude + Vorplatz)
@@ -1510,27 +1511,18 @@ func _wassertank() -> void:
 
 
 func _popcorn() -> void:
-	var c := Vector3(255, 0, 40)
-	_box(c + Vector3(0, 15, 0), Vector3(34, 30, 34), m_silber)
-	_zyl(c + Vector3(0, 38, 0), 7.0, 16.0, _std(Color(0.9, 0.1, 0.1), 0.4, 0.0, 0.5), true, 24, 10.0)
-	for i in 8:
-		var ang := TAU * i / 8.0
-		var s := _box(c + Vector3(cos(ang) * 8.5, 38, sin(ang) * 8.5), Vector3(2.2, 16, 0.3), _std(Color(1, 1, 1), 0.5), false)
-		s.rotation.y = -ang + PI / 2.0
-	var pc := _std(Color(1.0, 0.95, 0.7), 0.5, 0.0, 0.9)
-	for i in 45:
-		var ang := rng.randf() * TAU
-		var rr := sqrt(rng.randf()) * 9.0
-		var sm := MeshInstance3D.new()
-		var sp := SphereMesh.new()
-		var r := rng.randf_range(1.5, 2.6)
-		sp.radius = r
-		sp.height = r * 2.0
-		sm.mesh = sp
-		sm.material_override = pc
-		sm.position = c + Vector3(cos(ang) * rr, 46.0 + rng.randf() * 6.0, sin(ang) * rr)
-		add_child(sm)
-	_licht(c + Vector3(0, 56, 0), Color(1.0, 0.85, 0.4), 4.0, 60.0)
+	# Popcorn-Labor (levels/popcorn_labor.gd): begehbar, Eingang zeigt zum Popcornstich (nach Westen)
+	_haus("res://levels/popcorn_labor.gd", POPCORN_POS, -90.0)
+
+
+## Setzt ein begehbares Haus (Unterklasse von levels/haus.gd). `dreh`: Grad um y; die Front zeigt
+## bei 0 nach Sueden (+z), bei -90 nach Westen, bei 90 nach Osten, bei 180 nach Norden.
+func _haus(skript: String, pos: Vector2, dreh: float) -> void:
+	var h := Node3D.new()
+	h.set_script(load(skript))
+	h.position = Vector3(pos.x, 0, pos.y)
+	h.rotation_degrees.y = dreh
+	add_child(h)
 
 
 func _burger() -> void:
