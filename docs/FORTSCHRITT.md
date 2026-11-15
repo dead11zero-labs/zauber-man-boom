@@ -108,3 +108,16 @@ Weitere Meilensteine: siehe `docs/KONZEPT.md`, Abschnitt 10.
   Test (headless, 70 s Spielzeit): keine Rotfahrt, jedes Auto stand zwischendurch; Synth-Bots legten 175 bis 329 m zurueck und fielen nicht ins Flussbett.
   Nicht getestet: von Hand durch die Stadt laufen, Autos und Spieler im Gedraenge, Abbiegen der Autos an vollen Kreuzungen (sie achten dort nur auf die Ampel, nicht auf Querverkehr anderer Rundkurse).
   Messung (AMD Renoir, 1280x720, Stufe MITTEL): unveraendert rund 28 bis 37 FPS, nachts mit Laternenlicht 35 FPS.
+
+## Ausserhalb des Konzepts: begehbare Haeuser, Korrekturen, Realismus-Leitfaden (2026-11-15)
+- [x] Wassertank: Stuetzen tragen den Tank (standen vorher neben dem Tank in der Luft), Hochhaus von der Runenstrasse gerueckt. Per Screenshot geprueft.
+- [x] Sy-Ci Burgers: Schraege neben der Treppe entfernt (schlankes Gelaender, schmale Stufen-LEDs). Per Screenshot geprueft.
+- [x] Popcorn-Labor begehbar, vier Etagen mit Treppenhaus und Labor-Einrichtung.
+- [x] Buecherei, Museum und Stadtverwaltung auf frueheren Freiflaechen, alle begehbar.
+  Test (headless, Spielfigur mit gehaltener Vorwaerts-Taste entlang von Wegpunkten): in allen vier Haeusern durch die Schiebetuer und ueber alle Treppen bis ins oberste Geschoss (Popcorn-Labor y 14,96, Buecherei 4,76, Museum 4,96, Stadtverwaltung 8,96). Aussen- und Innenansichten per Screenshot geprueft.
+  Nicht getestet: von Hand durchlaufen, Kamera in den Treppenhaeusern, alle Moebel-Kollisionen einzeln.
+- [x] Gamepad: Beschriftung je Pad-Familie, Meldung beim Verbinden.
+  Test (headless): Familien-Erkennung aus dem Namen, Beschriftung wechselt, Meldungstext. Nicht getestet: echtes Pad. Der gekoppelte Pro Controller war waehrend der Arbeit nicht verbunden (`bluetoothctl`: Connected no, kein Eingabegeraet im System).
+- [x] Realismus-Leitfaden (Downloads/godot_4_realismus_checkliste): umgesetzt sind Renderer-Pruefung, MSAA/FXAA, Schattenatlas und Schattenfilter, anisotrope Filterung, AgX mit Weisspunkt, Himmel als Umgebungslicht, SSAO/SSIL/SSR, SDFGI, volumetrischer Nebel, Glow 0,4, Schatten-Ueberblendung, Tangenten und LODs der Modelle (waren schon an), Schattenwurf der Modelle, Triplanar auf grossen Flaechen.
+  Messung (AMD Renoir, 1280x720, Stufe MITTEL, alt und neu direkt nacheinander): 30,9 gegen 30,5 FPS. 16x anisotrop haette auf dieser Grafik 6 FPS gekostet (30 gegen 24) und gilt deshalb nur auf Stufe HOCH.
+  Nicht umgesetzt: HDRI-Himmel, VoxelGI, Parallax-Hoehenkarten, Detail-Texturen, Subsurface Scattering, AO-Karten (Gruende in OFFENE_FRAGEN 58 bis 62). Stufe HOCH nur per Screenshot gesehen, Bildrate dort nicht gemessen.
