@@ -147,7 +147,7 @@ func _basis_materialien() -> void:
 	m["leder"] = _tex("foyer_brown_leather", 1.2)
 	m["stahl"] = _tex("kantine_stahl", 1.2, Color(1.2, 1.2, 1.25), 0.3, 0.45)
 	m["teppich"] = _tex("buero_teppich", 2.0)
-	m["saeule"] = _tex("brushed_concrete_04", 2.0, Color(0.95, 0.93, 0.88), 0.0, 1.0, false)
+	m["saeule"] = _tex("brushed_concrete_04", 2.0, Color(1.7, 1.65, 1.55), 0.0, 1.0, false)
 	m["chrom"] = _std(Color(0.7, 0.72, 0.76), 0.0, 0.8, 0.3)
 	m["dunkel"] = _std(Color(0.1, 0.11, 0.14), 0.0, 0.3, 0.5)
 	m["weiss"] = _std(Color(0.93, 0.94, 0.96), 0.0, 0.05, 0.45)

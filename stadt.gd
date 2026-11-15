@@ -14,7 +14,7 @@ const TANK_POS := Vector2(240, -126)
 const POPCORN_POS := Vector2(255, 40)
 ## Oeffentliche Gebaeude (begehbar, levels/haus.gd): [Skript, Mitte, Drehung, Sperrflaeche]
 const BUECHEREI_POS := Vector2(-33, -40)   ## Front nach Osten zur Zauber-Allee
-const MUSEUM_POS := Vector2(-38, -185)     ## Front nach Norden zur Tower-Allee
+const MUSEUM_POS := Vector2(-38, -182)     ## Front nach Norden zur Tower-Allee
 const RATHAUS_POS := Vector2(42, 0)        ## Front nach Westen zur Zauber-Allee, mit Vorplatz
 const TANK_RADIUS := 13.0
 const TANK_STUETZE_H := 8.0
@@ -26,6 +26,12 @@ const RASEN_KACHEL := 3.0       ## Meter pro Rasen-Kachel
 const SSAO_RADIUS := 1.6
 const SSAO_STAERKE := 1.8
 const SSR_SCHRITTE := 40
+## Realismus-Leitfaden (docs/FORTSCHRITT.md): Die Projekteinstellungen stehen auf den Werten fuer Stufe HOCH
+## (4x MSAA, FXAA, weiche Schatten "mittel", 16x anisotrop). Schwaechere Stufen schalten hier zur Laufzeit zurueck.
+const TONEMAP_WEISS := 6.0          ## Weisspunkt fuer ACES/Filmic (AgX nutzt seinen eigenen `tonemap_agx_white`)
+const GLOW_STAERKE := 0.4           ## vorher 0.7: Neon ueberstrahlte ganze Flaechen
+const NEBEL_VOLUMEN_DICHTE := 0.0015 ## volumetrischer Nebel (nur Stufe HOCH); der Leitfaden nennt 0.005+, das ist fuer 700 m Stadt zu dicht
+const SSIL_RADIUS := 4.0
 ## Grafikstufen: HOCH (eigene Grafikkarte), MITTEL (integrierte Grafik), NIEDRIG (Mobile-Renderer/Android).
 ## Automatik ueber `_grafik_stufe()`, fest einstellbar per Projekteinstellung `zauber_man/grafik_stufe` (0..2).
 enum Grafik { NIEDRIG, MITTEL, HOCH }
@@ -41,6 +47,7 @@ const LICHT_FADE_FAKTOR := 4.0      ## Punktlichter verblassen ab Reichweite x F
 const LICHT_FADE_MIN := 70.0
 const LICHT_FADE_LAENGE := 25.0
 const BUSCH_SEGMENTE := 12
+const MODELL_ORDNER := "res://imported_models/"
 const SONNE_WEICH := 0.6        ## Winkeldurchmesser der Sonne in Grad (weiche Schattenraender)
 ## Fluesse: abgesenktes Bett mit Kaimauern, Gelaender und Rampen zum Wasser
 const FLUSS_BREITE := 16.0
@@ -162,6 +169,7 @@ func _ready() -> void:
 	_grenze()
 	_tageszeit()
 	_sichtweiten(self)
+	_modelle_schatten.call_deferred()
 	_hintergrundmusik()
 
 
@@ -199,6 +207,20 @@ func _sichtweiten(wurzel: Node) -> void:
 			n.distance_fade_enabled = true
 			n.distance_fade_begin = maxf(reichweite * LICHT_FADE_FAKTOR, LICHT_FADE_MIN)
 			n.distance_fade_length = LICHT_FADE_LAENGE
+
+
+## Realismus-Leitfaden Punkt 3: alle importierten Modelle (Meshy-Figuren, Fahrzeuge) werfen Schatten.
+## Laeuft einmal nach dem Aufbau ueber die ganze Szene (auch Spieler, NPCs und Verkehr ausserhalb der Stadt).
+func _modelle_schatten() -> void:
+	var stapel: Array[Node] = [get_tree().current_scene]
+	while not stapel.is_empty():
+		var n: Node = stapel.pop_back()
+		if n == null:
+			continue
+		stapel.append_array(n.get_children())
+		var mi := n as MeshInstance3D
+		if mi != null and mi.mesh != null and mi.mesh.resource_path.begins_with(MODELL_ORDNER):
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 
 
 ## Hintergrundmusik im Spiel (Endlosschleife)
@@ -455,7 +477,7 @@ func _sperrzonen() -> void:
 		Rect2(-170, -65, 120, 110),   # Waldviertel
 		Rect2(-318, -312, 135, 212),  # Gurken-Wald
 		Rect2(-47, -59, 28, 38),      # Buecherei
-		Rect2(-59, -198, 42, 26),     # Museum
+		Rect2(-59, -196, 42, 27),     # Museum
 		Rect2(14, -21, 44, 42),       # Stadtverwaltung mit Vorplatz
 	]
 	linien = [
@@ -523,7 +545,9 @@ func _umgebung() -> void:
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.glow_enabled = true
-	env.glow_intensity = 0.7
+	env.tonemap_white = TONEMAP_WEISS
+	env.glow_intensity = GLOW_STAERKE
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 	env.glow_bloom = 0.03
 	env.glow_hdr_threshold = 1.0
 	env.fog_enabled = true
@@ -540,6 +564,14 @@ func _umgebung() -> void:
 	env.ssr_max_steps = SSR_SCHRITTE
 	env.ssr_fade_in = 0.2
 	env.ssr_fade_out = 2.5
+	# Indirektes Licht und Lichtstreuung: SDFGI, SSIL und volumetrischer Nebel kosten viel, nur Stufe HOCH
+	env.ssil_enabled = hoch
+	env.ssil_radius = SSIL_RADIUS
+	env.sdfgi_enabled = hoch
+	env.sdfgi_use_occlusion = true
+	env.volumetric_fog_enabled = hoch
+	env.volumetric_fog_density = NEBEL_VOLUMEN_DICHTE
+	env.volumetric_fog_gi_inject = 1.0
 	we.environment = env
 	add_child(we)
 	sonne = DirectionalLight3D.new()
@@ -553,6 +585,14 @@ func _umgebung() -> void:
 	bild.scaling_3d_scale = AUFLOESUNG_3D[grafik]
 	if grafik == Grafik.MITTEL:
 		bild.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
+	# Kantenglaettung und Schattenfilter: volle Werte nur auf Stufe HOCH
+	bild.msaa_3d = Viewport.MSAA_4X if hoch else Viewport.MSAA_DISABLED
+	bild.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED if grafik == Grafik.NIEDRIG else Viewport.SCREEN_SPACE_AA_FXAA
+	# 16x anisotrop kostet auf integrierter Grafik rund 20 Prozent Bildrate (gemessen 30 statt 24 FPS mit 4x)
+	bild.anisotropic_filtering_level = Viewport.ANISOTROPY_16X if hoch else Viewport.ANISOTROPY_4X
+	var filter := RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM if hoch else RenderingServer.SHADOW_QUALITY_SOFT_LOW
+	RenderingServer.directional_soft_shadow_filter_set_quality(filter)
+	RenderingServer.positional_soft_shadow_filter_set_quality(filter)
 	sonne.shadow_bias = 0.04
 	sonne.shadow_normal_bias = 1.5
 	sonne.rotation_degrees = Vector3(-40, -35, 0)

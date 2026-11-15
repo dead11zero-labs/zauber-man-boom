@@ -23,7 +23,7 @@ func _bauen() -> void:
 	_basis_materialien()
 	m["boden"] = _tex("foyer_granite_tile", 2.4)
 	m["boden_oben"] = _tex("markt_oak_wood_planks", 2.4)
-	m["fassade"] = _tex("concrete_tile_facade", 4.0, Color(0.95, 0.92, 0.85), 0.0, 1.0, false)
+	m["fassade"] = _tex("concrete_tile_facade", 4.0, Color(1.5, 1.45, 1.35), 0.0, 1.0, false)
 	m["marmor"] = _tex("marble_01", 2.0)
 	m["gold"] = _std(STADT_GOLD, 0.0, 0.9, 0.3)
 	m["blau"] = _std(STADT_BLAU, 0.0, 0.0, 0.7)
