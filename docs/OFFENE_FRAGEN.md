@@ -51,6 +51,13 @@ Entschieden (2026-11-07): Iggy hat das Grimoire zerrissen, weil Magie-Strom sein
 45. Steuerung bleibt "Panzer" (links/rechts dreht die Figur). Mit Pad und Touch waere freies Laufen relativ zur Kamera ueblicher. Umbauen?
 46. Grafikstufe HOCH (SSAO, Spiegelungen) kostet auf der integrierten AMD-Grafik rund 10 FPS und ist dort automatisch aus. Soll es ein Optionsmenue fuer die Stufe geben (der OPTIONEN-Knopf im Startmenue ist noch leer)?
 47. Die Stadt bleibt bunt (Neonfenster, leuchtende Plaza-Ringe, Zuckerwatte-Baeume). Fuer mehr Realismus muessten die Fensterfarben im Fassaden-Shader und die Emissionen gedaempft werden (siehe auch Frage 37). Wie weit soll das gehen?
-48. Fluesse liegen flach auf dem Pflaster, ohne Ufer oder Bett. Ufermauern und abgesenktes Flussbett waeren der naechste Schritt.
+48. (erledigt 2026-11-15: Flussbett mit Kaimauern, Gelaendern, Rampen und Bruecken.)
 49. Iggy hat keine Kollision (laeuft als Platzhalter im Kreis), Buesche und Baumkronen sind durchlaessig. Ok so?
 50. VRAM-Verbrauch liegt bei ca. 1,8 GB (von 2 GB auf dem Testrechner). Texturen kleiner importieren?
+51. Flusstiefe: Das Bett ist nur 1,45 m tief (Wasser 0,75 m), weil das Terrain3D-Gelaende unter der Stadtplatte auf y -1,5 liegt. Fuer ein tieferes Bett muesste das Terrain unter der Stadt neu gebacken werden. Gewuenscht?
+52. Der Testraum (`levels/test_aufbau.gd`, z 130..155) steht auf bzw. direkt neben der Marktstrasse, die Rollen-NPCs stehen nahe der Kreuzung Zauber-Allee/Marktstrasse, der Spieler startet mitten auf der Zauber-Allee. Autos bremsen fuer den Spieler, aber der Startplatz sollte mit Meilenstein 6 auf einen Gehweg oder die Plaza wandern.
+53. Die Zauber-Allee fuehrt weiter ueber die Runen-Plaza (Obelisk in der Mitte). Der Autoverkehr meidet diesen Abschnitt. Soll die Plaza eine Fussgaengerzone mit Pollern bleiben oder einen Kreisverkehr bekommen?
+54. Alle Ampeln schalten gleichzeitig (eine Achse hat stadtweit Gruen). Versetzte Phasen je Kreuzung waeren realistischer. Fussgaenger (Synth-Bots) beachten die Ampeln nicht.
+55. Die Strassennamen (Zauber-Allee, Tower-Allee, Runenstrasse, Marktstrasse, Schattenkai, Hafenstrasse, Osttangente, Brezelweg, Altstadtgasse) sind von mir erfunden. Passen sie zur Welt?
+56. Der Westen (Gurken-Wald, Handelsplatz) hat nur Brezelweg und Tower-Allee, die Altstadt nördlich der Runenstrasse keine Querstrasse. Mehr Nebenstrassen wuerden Gebaeude kosten.
+57. Durch die neuen Sperrstreifen fuer Strassen und Ufer sind einige Gebaeude weggefallen oder haben andere Hoehen (gleicher Zufallsstartwert, andere Reihenfolge).

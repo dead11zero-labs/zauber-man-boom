@@ -98,3 +98,13 @@ Weitere Meilensteine: siehe `docs/KONZEPT.md`, Abschnitt 10.
 - [x] Optik: Pflaster-Boden, Asphaltstrassen mit Mittel- und Randlinien (Neon-Mittelstreifen entfernt), Flusswasser-Shader, Beton/Metall-Texturen fuer Stein und Aero-Ring, Rasen auf Handelsplatz/Gurken-Wald, Rinde/Laub im Wald, natuerlicherer Taghimmel, AgX-Tonemapping, weiche 4-Stufen-Schatten, SSAO und Spiegelungen (nur Stufe HOCH).
 - [x] Leistung: Grafikstufen, Wald in Kacheln, Kleinteile mit Sichtweite, Lichter mit Distanz-Fade, Buesche mit weniger Dreiecken.
   Messung (AMD Renoir integriert, 1280x720, Stufe MITTEL): vorher ca. 25 FPS, jetzt 36 bis 43 FPS. Stufe HOCH auf diesem Rechner nur ca. 14 FPS.
+
+## Ausserhalb des Konzepts: Flussufer, Strassennetz, Ampeln, Verkehr (2026-11-15)
+- [x] Flussufer: abgesenktes Bett, Kaimauern, Gelaender mit Neonband, Rampen zum Wasser, Durchlaesse am Stadtrand.
+  Test (headless, Strahlen): Boden im Flussbett bei y -1,5 statt 0, Kaimauer und Gelaender halten einen Querstrahl auf, Brueckenplatte liegt bei y 0,1. Screenshots geprueft (Kai, Stehen im Wasser).
+- [x] Strassennetz: 11 Strassen mit Namen, alle Wahrzeichen angebunden, 9 Bruecken, Kreuzungsflaechen ohne ueberlappende Markierungen.
+- [x] Ampeln an 13 Kreuzungen (Rot, Rot-Gelb, Gruen, Gelb), Fussgaengersignale, Zebrastreifen, Haltelinien, Strassenschilder, Bordsteine, Laternen (nachts mit Licht), Haltestellen, Holo-Wegweiser.
+- [x] Bodenverkehr: 12 Schwebe-Autos, halten bei Rot.
+  Test (headless, 70 s Spielzeit): keine Rotfahrt, jedes Auto stand zwischendurch; Synth-Bots legten 175 bis 329 m zurueck und fielen nicht ins Flussbett.
+  Nicht getestet: von Hand durch die Stadt laufen, Autos und Spieler im Gedraenge, Abbiegen der Autos an vollen Kreuzungen (sie achten dort nur auf die Ampel, nicht auf Querverkehr anderer Rundkurse).
+  Messung (AMD Renoir, 1280x720, Stufe MITTEL): unveraendert rund 28 bis 37 FPS, nachts mit Laternenlicht 35 FPS.

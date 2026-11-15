@@ -32,6 +32,23 @@ const LICHT_FADE_MIN := 70.0
 const LICHT_FADE_LAENGE := 25.0
 const BUSCH_SEGMENTE := 12
 const SONNE_WEICH := 0.6        ## Winkeldurchmesser der Sonne in Grad (weiche Schattenraender)
+## Fluesse: abgesenktes Bett mit Kaimauern, Gelaender und Rampen zum Wasser
+const FLUSS_BREITE := 16.0
+const FLUSS_TIEFE := 1.45       ## Sohle unter Strassenniveau (knapp ueber dem Terrain3D-Gelaende, das unter der Platte auf -1.5 liegt)
+const WASSER_Y := -0.7          ## Wasserspiegel
+const FLUSS_SPERRE := 24.0      ## fuer Gebaeude gesperrte Breite (Wasser plus Uferweg)
+const KAI_STUECK := 4.0         ## Kaimauer und Gelaender werden in Stuecken dieser Laenge gebaut
+const KAI_KANTE := Vector2(0.7, 0.12)        ## Abdeckstein: Breite, Hoehe
+const GELAENDER_H := 1.1
+const GELAENDER_ABSTAND := 0.45  ## Gelaender steht so weit hinter der Mauerkante
+const GELAENDER_PFOSTEN := 0.12
+const GELAENDER_STRASSE := 3.2   ## Luecke im Gelaender, wo eine Strasse (Bruecke) kreuzt
+const RAMPE_LAENGE := 7.0
+const RAMPE_BREITE := 2.2
+const RAMPE_LUECKE := 3.5        ## Gelaender-Luecke am oberen Ende einer Rampe
+## Rampen zum Wasser: [Fluss (0 Ost, 1 West), Abschnitt der Flusslinie, Uferseite (+1/-1)]
+const RAMPEN: Array = [[0, 3, 1.0], [0, 5, -1.0], [1, 3, -1.0], [1, 5, 1.0]]
+const PLATTE := 700.0            ## Kantenlaenge der Stadtplatte
 const MARKT_POS := Vector2(-100, 92)   ## Mitte des Neon-Markts 24/7 (Front nach Sueden)
 
 var rng := RandomNumberGenerator.new()
@@ -45,6 +62,8 @@ var env: Environment
 var himmel: ProceduralSkyMaterial
 var sonne: DirectionalLight3D
 var nacht := false
+var _fluss_cache: Array[PackedVector2Array] = []
+var _netz: Node3D   ## Strassennetz (bekommt den Tag/Nacht-Wechsel fuer die Laternen)
 var grafik: int = Grafik.HOCH
 
 # Hauptquartier
@@ -426,13 +445,13 @@ func _sperrzonen() -> void:
 		Rect2(-318, -312, 135, 212),  # Gurken-Wald
 	]
 	linien = [
-		[PackedVector2Array([Vector2(0, -205), Vector2(0, 198)]), 20.0],
-		[PackedVector2Array([Vector2(-290, -90), Vector2(290, -90)]), 16.0],
-		[PackedVector2Array([Vector2(-290, 130), Vector2(290, 130)]), 14.0],
-		[_fluss_ost(), 16.0],
-		[_fluss_west(), 16.0],
+		[_fluss_ost(), FLUSS_SPERRE],
+		[_fluss_west(), FLUSS_SPERRE],
 		[PackedVector2Array([Vector2(-170, TerrainForm.PASS_Z), Vector2(-345, TerrainForm.PASS_Z)]), 46.0],  # Zugang zum Durchgang
 	]
+	# Strassennetz (levels/strassen_daten.gd): Fahrbahn plus Gehweg-Streifen bleibt frei
+	for st in StrassenDaten.STRASSEN:
+		linien.append([PackedVector2Array([st["a"], st["b"]]), st["breite"] + 4.0])
 
 
 func _fluss_ost() -> PackedVector2Array:
@@ -550,6 +569,8 @@ func _tageszeit() -> void:
 		env.fog_density = 0.0004
 	for m in fenster_mats:
 		m.set_shader_parameter("emission_strength", 2.8 if nacht else 0.35)
+	if _netz != null:
+		_netz.call("nacht_setzen", nacht)
 
 
 func _boden() -> void:
@@ -562,34 +583,220 @@ func _boden() -> void:
 	m.set_shader_parameter("tex_rough", load(pfad + "rough.jpg"))
 	m.set_shader_parameter("kachel", BODEN_KACHEL)
 	# Die Platte endet an TerrainForm.RAND, dahinter uebernimmt das Terrain3D-Gelaende.
-	var b := _box(Vector3(0, -0.5, 0), Vector3(700, 1, 700), m)
+	# Sie ist keine Box mehr, sondern eine Flaeche mit ausgeschnittenen Flusslaeufen.
+	var b := _flaeche(Rect2(-PLATTE / 2.0, -PLATTE / 2.0, PLATTE, PLATTE), 0.0, m, true)
 	b.name = "Boden"
-	# farbige Bodenflaechen der Viertel
 	# Schatten-Gassen: dunkler Asphalt, Handelsplatz und Gurken-Wald: Rasen
-	_box(Vector3(0, 0.03, 247), Vector3(380, 0.06, 100), _aussen_mat("strasse_asphalt", STRASSE_KACHEL, Color(0.28, 0.28, 0.3), 0.0), false)
-	_box(Vector3(-255, 0.03, 100), Vector3(80, 0.06, 395), _aussen_mat("park_rasen", RASEN_KACHEL, Color(0.75, 0.8, 0.7), 0.0), false)
-	_box(Vector3(-250.5, 0.04, -206), Vector3(135, 0.08, 212), _aussen_mat("park_rasen", RASEN_KACHEL, Color(0.5, 0.58, 0.42), 0.0), false)
+	_flaeche(Rect2(-190, 197, 380, 100), 0.06, _aussen_mat("strasse_asphalt", STRASSE_KACHEL, Color(0.28, 0.28, 0.3), 0.0), false)
+	_flaeche(Rect2(-295, -97.5, 80, 395), 0.06, _aussen_mat("park_rasen", RASEN_KACHEL, Color(0.75, 0.8, 0.7), 0.0), false)
+	_flaeche(Rect2(-318, -312, 135, 212), 0.08, _aussen_mat("park_rasen", RASEN_KACHEL, Color(0.5, 0.58, 0.42), 0.0), false)
 
 
+## Flusslauf als Polygon (Mittellinie bis ueber den Plattenrand verlaengert, auf Breite gebracht,
+## an der Platte abgeschnitten). Ohne Loecher, teilt die Platte von Nord nach Sued.
+func _fluss_polygon(pts: PackedVector2Array) -> PackedVector2Array:
+	var linie := pts.duplicate()
+	var rand := PLATTE / 2.0 + 10.0
+	var vorn := linie[0] - linie[1]
+	linie.insert(0, linie[0] + vorn * ((-rand - linie[0].y) / vorn.y))
+	var n := linie.size()
+	var hinten := linie[n - 1] - linie[n - 2]
+	linie.append(linie[n - 1] + hinten * ((rand - linie[n - 1].y) / hinten.y))
+	var breit := Geometry2D.offset_polyline(linie, FLUSS_BREITE / 2.0, Geometry2D.JOIN_ROUND, Geometry2D.END_BUTT)
+	var h := PLATTE / 2.0
+	var platte := PackedVector2Array([Vector2(-h, -h), Vector2(h, -h), Vector2(h, h), Vector2(-h, h)])
+	var teile := Geometry2D.intersect_polygons(breit[0], platte)
+	return teile[0]
+
+
+func _fluss_polygone() -> Array[PackedVector2Array]:
+	if _fluss_cache.is_empty():
+		_fluss_cache = [_fluss_polygon(_fluss_ost()), _fluss_polygon(_fluss_west())]
+	return _fluss_cache
+
+
+## Ebene Flaeche auf Hoehe y: Rechteck minus Flusslaeufe, als ein Mesh (Normalen nach oben).
+## Mit `kollision` bekommt sie einen Dreiecks-Kollisionskoerper.
+func _flaeche(bereich: Rect2, y: float, mat: Material, kollision: bool) -> MeshInstance3D:
+	var teile: Array[PackedVector2Array] = [PackedVector2Array([bereich.position, Vector2(bereich.end.x, bereich.position.y), bereich.end, Vector2(bereich.position.x, bereich.end.y)])]
+	for fluss in _fluss_polygone():
+		var rest: Array[PackedVector2Array] = []
+		for t in teile:
+			for stueck in Geometry2D.clip_polygons(t, fluss):
+				if not Geometry2D.is_polygon_clockwise(stueck):
+					rest.append(stueck)
+		teile = rest
+	return _polygon_mesh(teile, y, mat, kollision)
+
+
+func _polygon_mesh(teile: Array[PackedVector2Array], y: float, mat: Material, kollision: bool) -> MeshInstance3D:
+	var ecken := PackedVector3Array()
+	for t in teile:
+		var idx := Geometry2D.triangulate_polygon(t)
+		for i in range(0, idx.size(), 3):
+			var a := Vector3(t[idx[i]].x, y, t[idx[i]].y)
+			var b := Vector3(t[idx[i + 1]].x, y, t[idx[i + 1]].y)
+			var c := Vector3(t[idx[i + 2]].x, y, t[idx[i + 2]].y)
+			# Dreieck so drehen, dass die Vorderseite nach oben zeigt
+			if (c - a).cross(b - a).y < 0.0:
+				var tausch := b
+				b = c
+				c = tausch
+			ecken.append_array([a, b, c])
+	return _dreiecke(ecken, mat, kollision)
+
+
+## Mesh aus einer Dreiecksliste (flache Normalen), optional mit Kollision.
+func _dreiecke(ecken: PackedVector3Array, mat: Material, kollision: bool) -> MeshInstance3D:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(0, ecken.size(), 3):
+		# Vorderseite ist im Uhrzeigersinn gewickelt, die Normale zeigt zur Vorderseite
+		var n := (ecken[i + 2] - ecken[i]).cross(ecken[i + 1] - ecken[i]).normalized()
+		for k in 3:
+			st.set_normal(n)
+			st.add_vertex(ecken[i + k])
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = mat
+	add_child(mi)
+	if kollision:
+		var sb := StaticBody3D.new()
+		var cs := CollisionShape3D.new()
+		var form := ConcavePolygonShape3D.new()
+		form.backface_collision = true
+		form.set_faces(ecken)
+		cs.shape = form
+		sb.add_child(cs)
+		mi.add_child(sb)
+	return mi
+
+
+## Haengt einen achsfreien Quader von a nach b (Unterkante auf y_unten) an eine Dreiecksliste.
+func _quader(ecken: PackedVector3Array, a: Vector2, b: Vector2, breite: float, y_unten: float, hoehe: float) -> void:
+	var laengs := (b - a).normalized()
+	var quer := Vector2(-laengs.y, laengs.x) * breite * 0.5
+	var p: Array[Vector3] = []
+	for yy in [y_unten, y_unten + hoehe]:
+		for q in [a - quer, a + quer, b + quer, b - quer]:
+			p.append(Vector3(q.x, yy, q.y))
+	# Deckel, Boden und vier Seiten (je zwei Dreiecke, Vorderseite aussen)
+	for f in [[4, 5, 6, 7], [3, 2, 1, 0], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]]:
+		var n := (p[f[2]] - p[f[0]]).cross(p[f[1]] - p[f[0]])
+		var mitte := (p[f[0]] + p[f[2]]) * 0.5
+		var zentrum := Vector3((a.x + b.x) * 0.5, y_unten + hoehe * 0.5, (a.y + b.y) * 0.5)
+		if n.dot(mitte - zentrum) < 0.0:
+			ecken.append_array([p[f[0]], p[f[2]], p[f[1]], p[f[0]], p[f[3]], p[f[2]]])
+		else:
+			ecken.append_array([p[f[0]], p[f[1]], p[f[2]], p[f[0]], p[f[2]], p[f[3]]])
+
+
+## Fluesse: Sohle, Wasser, Kaimauern mit Abdeckstein, Gelaender (mit Luecken an Strassen und Rampen),
+## Rampen zum Wasser und Durchlaesse am Stadtrand.
 func _fluesse() -> void:
-	for pts in [_fluss_ost(), _fluss_west()]:
-		for i in pts.size() - 1:
-			var a := Vector3(pts[i].x, 0.06, pts[i].y)
-			var b := Vector3(pts[i + 1].x, 0.06, pts[i + 1].y)
-			_balken(a, b, 16.0, 0.1, m_wasser, false)
-		for p in pts:
-			_zyl(Vector3(p.x, 0.01, p.y), 8.0, 0.1, m_wasser)
+	var m_kai := _aussen_mat("brushed_concrete_04", 3.0, Color(0.62, 0.63, 0.66), 0.0)
+	var m_sohle := _aussen_mat("concrete_moss", 5.0, Color(0.32, 0.36, 0.33), 0.0)
+	var m_gelaender := _std(Color(0.2, 0.22, 0.26), 0.0, 0.85, 0.35)
+	var m_gel_neon := _std(Color(0.2, 0.9, 1.0), 1.6)
+	# Sohle: eine Platte unter der ganzen Stadt, sichtbar nur in den Flusslaeufen (faengt auch alles auf, was faellt)
+	_box(Vector3(0, -FLUSS_TIEFE - 0.5, 0), Vector3(PLATTE, 1.0, PLATTE), m_sohle)
+	var linien_f: Array[PackedVector2Array] = [_fluss_ost(), _fluss_west()]
+	var polys := _fluss_polygone()
+	var rand := PLATTE / 2.0 - 0.1
+	for f in polys.size():
+		var poly := polys[f]
+		_polygon_mesh([poly], WASSER_Y, m_wasser, false)
+		# Rampen dieses Flusses: Fusspunkt oben (Gelaender-Luecke) merken
+		var luecken: Array[Vector2] = []
+		for r in RAMPEN:
+			if r[0] != f:
+				continue
+			var pa: Vector2 = linien_f[f][r[1]]
+			var pb: Vector2 = linien_f[f][r[1] + 1]
+			var laengs := (pb - pa).normalized()
+			var quer := Vector2(-laengs.y, laengs.x) * float(r[2])
+			var mitte := (pa + pb) * 0.5 + quer * (FLUSS_BREITE / 2.0 - RAMPE_BREITE / 2.0)
+			var oben := mitte - laengs * RAMPE_LAENGE / 2.0
+			var unten := mitte + laengs * RAMPE_LAENGE / 2.0
+			_balken(Vector3(oben.x, 0.0, oben.y), Vector3(unten.x, -FLUSS_TIEFE, unten.y), RAMPE_BREITE, 0.5, m_kai)
+			luecken.append(oben + laengs * RAMPE_LUECKE * 0.3 + quer * RAMPE_BREITE / 2.0)
+		var wand := PackedVector3Array()
+		var stein := PackedVector3Array()
+		var gel := PackedVector3Array()
+		var neon := PackedVector3Array()
+		var gel_koerper := StaticBody3D.new()
+		add_child(gel_koerper)
+		for i in poly.size():
+			var a := poly[i]
+			var b := poly[(i + 1) % poly.size()]
+			# Kanten auf dem Plattenrand sind offen (dort stehen die Durchlaesse)
+			if (absf(a.y) > rand and absf(b.y) > rand) or (absf(a.x) > rand and absf(b.x) > rand):
+				continue
+			var laengs := (b - a).normalized()
+			var aussen := Vector2(-laengs.y, laengs.x)
+			if Geometry2D.is_point_in_polygon((a + b) * 0.5 + aussen * 0.3, poly):
+				aussen = -aussen
+			var stuecke := maxi(1, ceili(a.distance_to(b) / KAI_STUECK))
+			for k in stuecke:
+				var p0 := a.lerp(b, float(k) / stuecke)
+				var p1 := a.lerp(b, float(k + 1) / stuecke)
+				var pm := (p0 + p1) * 0.5
+				# Mauer: Flaeche zeigt ins Flussbett
+				var o0 := Vector3(p0.x, 0.0, p0.y)
+				var o1 := Vector3(p1.x, 0.0, p1.y)
+				var u0 := o0 + Vector3.DOWN * FLUSS_TIEFE
+				var u1 := o1 + Vector3.DOWN * FLUSS_TIEFE
+				var innen := Vector3(-aussen.x, 0.0, -aussen.y)
+				if (o1 - o0).cross(u0 - o0).dot(innen) > 0.0:
+					wand.append_array([o0, u0, o1, o1, u0, u1])
+				else:
+					wand.append_array([o0, o1, u0, o1, u1, u0])
+				_quader(stein, p0 + aussen * KAI_KANTE.x * 0.5, p1 + aussen * KAI_KANTE.x * 0.5, KAI_KANTE.x, 0.0, KAI_KANTE.y)
+				# Gelaender: nicht ueber Strassen (dort stehen Bruecken) und nicht am Rampenkopf
+				var frei := StrassenDaten.auf_strasse(pm, GELAENDER_STRASSE)
+				for l in luecken:
+					if pm.distance_to(l) < RAMPE_LUECKE:
+						frei = true
+				if frei:
+					continue
+				var g0 := p0 + aussen * GELAENDER_ABSTAND
+				var g1 := p1 + aussen * GELAENDER_ABSTAND
+				_quader(gel, g0, g1, 0.1, GELAENDER_H - 0.08, 0.08)
+				_quader(gel, g0, g1, 0.05, GELAENDER_H * 0.5, 0.05)
+				_quader(gel, g0, g0 + laengs * GELAENDER_PFOSTEN, GELAENDER_PFOSTEN, 0.0, GELAENDER_H)
+				_quader(neon, g0, g1, 0.06, GELAENDER_H - 0.16, 0.05)
+				var cs := CollisionShape3D.new()
+				var form := BoxShape3D.new()
+				form.size = Vector3(0.2, GELAENDER_H, g0.distance_to(g1))
+				cs.shape = form
+				cs.transform = Transform3D(Basis.looking_at(Vector3(laengs.x, 0.0, laengs.y), Vector3.UP), Vector3(pm.x + aussen.x * GELAENDER_ABSTAND, GELAENDER_H * 0.5, pm.y + aussen.y * GELAENDER_ABSTAND))
+				gel_koerper.add_child(cs)
+		_dreiecke(wand, m_kai, true)
+		_dreiecke(stein, m_kai, false)
+		_dreiecke(gel, m_gelaender, false)
+		_dreiecke(neon, m_gel_neon, false).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		# Durchlaesse am Stadtrand: Stirnwand mit dunklem Tunnelmund
+		for ende in [0, linien_f[f].size() - 1]:
+			var pe: Vector2 = linien_f[f][ende]
+			var nach: Vector2 = linien_f[f][1 if ende == 0 else ende - 1]
+			var zr := -1.0 if ende == 0 else 1.0
+			var x := pe.x + (pe.x - nach.x) / (pe.y - nach.y) * (zr * (PLATTE / 2.0 - 2.0) - pe.y)
+			_box(Vector3(x, 1.5, zr * (PLATTE / 2.0 - 1.0)), Vector3(FLUSS_BREITE + 14.0, FLUSS_TIEFE * 2.0 + 3.0, 2.0), m_kai)
+			_box(Vector3(x, -0.6, zr * (PLATTE / 2.0 - 2.05)), Vector3(FLUSS_BREITE - 1.0, FLUSS_TIEFE + 1.2, 0.1), _std(Color(0.0, 0.0, 0.0), 0.0, 0.0, 1.0), false)
 
 
+## Strassennetz mit Bruecken, Kreuzungen, Ampeln, Laternen, Schildern und Bodenverkehr
+## (levels/strassennetz.gd). Die Daten stehen in levels/strassen_daten.gd.
 func _strassen() -> void:
-	var achsen := [
-		[Vector3(0, 0.12, -205), Vector3(0, 0.12, 198), 20.0],
-		[Vector3(-290, 0.12, -90), Vector3(290, 0.12, -90), 16.0],
-		[Vector3(-290, 0.12, 130), Vector3(290, 0.12, 130), 14.0],
-	]
-	for s in achsen:
-		# Asphalt mit Mittel- und Randlinien (ersetzt den frueheren Neon-Mittelstreifen)
-		_balken(s[0], s[1], s[2], 0.12, _strassen_mat(s[2]), false)
+	var netz := Node3D.new()
+	netz.name = "Strassennetz"
+	netz.set_script(load("res://levels/strassennetz.gd"))
+	netz.set("fluesse", [_fluss_ost(), _fluss_west()])
+	netz.set("fluss_breite", FLUSS_BREITE)
+	netz.set("fluss_tiefe", FLUSS_TIEFE)
+	netz.set("aussparungen", kreise)
+	add_child(netz)
+	_netz = netz
 
 
 # ---------------------------------------------------------------- Aero-Stadtring
@@ -607,7 +814,8 @@ func _ring() -> void:
 		var seitlich := (b - a).cross(Vector3.UP).normalized() * 7.8
 		for sg in [-1.0, 1.0]:
 			_balken(a + seitlich * sg + Vector3(0, 0.15, 0), b + seitlich * sg + Vector3(0, 0.15, 0), 0.5, 0.3, m_cyan, false)
-		if i % 6 == 0:
+		# Stuetzen stehen weder auf Strassen noch im Flussbett
+		if i % 6 == 0 and not _auf_linien(a.x, a.z, 2.0):
 			_zyl(Vector3(a.x, (RING_H - 1.2) / 2.0, a.z), 1.6, RING_H - 1.2, m_ring, true, 12)
 	# Auffahrten
 	for grad in [30.0, 150.0, 210.0, 330.0]:
@@ -953,19 +1161,6 @@ func _aussen_mat(ordner: String, kachel: float, tint: Color, metall: float) -> S
 	t.uv1_world_triplanar = true
 	t.disable_ambient_light = false
 	return t
-
-
-## Asphalt mit Fahrbahnmarkierung fuer eine Strasse der Breite `breite` (strasse.gdshader).
-func _strassen_mat(breite: float) -> ShaderMaterial:
-	var m := ShaderMaterial.new()
-	m.shader = load("res://strasse.gdshader")
-	var pfad := "res://assets/texturen/strasse_asphalt/"
-	m.set_shader_parameter("tex_diff", load(pfad + "diff.jpg"))
-	m.set_shader_parameter("tex_nor", load(pfad + "nor.jpg"))
-	m.set_shader_parameter("tex_rough", load(pfad + "rough.jpg"))
-	m.set_shader_parameter("kachel", STRASSE_KACHEL)
-	m.set_shader_parameter("breite", breite)
-	return m
 
 
 func _tex_mat(ordner: String, kachel: float, tint: Color, metall: float) -> StandardMaterial3D:

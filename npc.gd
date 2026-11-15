@@ -1,12 +1,18 @@
 extends CharacterBody3D
 ## Synth-Bot: laeuft auf den Strassen von Synth-City von Kreuzung zu Kreuzung.
 
-## Strassen-Knoten (x, z) und Verbindungen. Die Enden liegen vor den Fluessen.
+## Strassen-Knoten (x, z) und Verbindungen: Kreuzungen des Strassennetzes (levels/strassen_daten.gd),
+## die Wege fuehren ueber die Bruecken. Gelaufen wird auf dem Gehweg neben der Fahrbahn.
 const KNOTEN: Array[Vector2] = [
-	Vector2(0, -200), Vector2(0, -90), Vector2(0, 130), Vector2(0, 195),
-	Vector2(-185, -90), Vector2(120, -90), Vector2(-185, 130), Vector2(140, 130),
+	Vector2(0, -206), Vector2(0, -90), Vector2(0, 130), Vector2(0, 198),
+	Vector2(-300, -90), Vector2(205, -90), Vector2(-300, 130), Vector2(205, 130),
+	Vector2(205, -206), Vector2(205, 198), Vector2(-300, 198),
 ]
-const KANTEN := {0: [1], 1: [0, 2, 4, 5], 2: [1, 3, 6, 7], 3: [2], 4: [1], 5: [1], 6: [2], 7: [2]}
+const KANTEN := {0: [1, 8], 1: [0, 2, 4, 5], 2: [1, 3, 6, 7], 3: [2, 9, 10], 4: [1, 6], 5: [1, 7, 8],
+	6: [2, 4, 10], 7: [2, 5, 9], 8: [0, 5], 9: [3, 7], 10: [3, 6]}
+## Abstand zur Fahrbahnkante (passt auch auf die Gehwege der Bruecken)
+const GEHWEG_MIN := 0.5
+const GEHWEG_MAX := 0.9
 const GRAVITY := 30.0
 
 var tempo := 2.2
@@ -28,7 +34,8 @@ var _sprung := 0.0
 func _ready() -> void:
 	randomize()
 	tempo = randf_range(1.8, 3.0)
-	_spur = randf_range(-6.0, 6.0)
+	_spur = randf_range(GEHWEG_MIN, GEHWEG_MAX) * (1.0 if randf() < 0.5 else -1.0)
+	add_to_group("verkehr_hindernis")  # Autos bremsen fuer Synth-Bots (vehicles/verkehr.gd)
 	_zeit = randf() * 10.0
 	modell.scale *= randf_range(0.95, 1.1)
 	# Startpunkt: zufaellig auf einer Strasse
@@ -39,7 +46,7 @@ func _ready() -> void:
 	var b := KNOTEN[nach]
 	var p := a.lerp(b, t)
 	var d := (b - a).normalized()
-	p += Vector2(-d.y, d.x) * _spur
+	p += Vector2(-d.y, d.x) * _versatz(a, b)
 	global_position = Vector3(p.x, 0.2, p.y)
 	_vorher = _knoten
 	_knoten = nach
@@ -47,10 +54,15 @@ func _ready() -> void:
 	_bereit = true
 
 
+## Seitlicher Versatz auf den Gehweg der Strasse zwischen a und b (Vorzeichen = Strassenseite).
+func _versatz(a: Vector2, b: Vector2) -> float:
+	return signf(_spur) * (StrassenDaten.breite_bei((a + b) * 0.5) * 0.5 + absf(_spur))
+
+
 ## Zielpunkt am Knoten, seitlich versetzt (eigene Spur), Richtung aus der letzten Strasse
 func _knoten_punkt(k: int, von: int) -> Vector3:
 	var d := (KNOTEN[k] - KNOTEN[von]).normalized()
-	var p := KNOTEN[k] + Vector2(-d.y, d.x) * _spur
+	var p := KNOTEN[k] + Vector2(-d.y, d.x) * _versatz(KNOTEN[von], KNOTEN[k])
 	return Vector3(p.x, 0.0, p.y)
 
 
