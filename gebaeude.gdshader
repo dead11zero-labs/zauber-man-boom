@@ -20,6 +20,12 @@ uniform float lit_chance = 0.45;
 uniform vec2 cell = vec2(3.2, 4.0);
 uniform float metallic_val = 0.3;
 uniform float roughness_val = 0.5;
+// Optional: Farbpalette des Modells (z. B. Kenney-Kits). Flaechen, deren Palettenfarbe dunkler als atlas_schwelle ist,
+// gelten als Detail (Gelaender, Rahmen) und bekommen keine Fenster. Ohne Textur (weiss) aendert sich nichts.
+uniform sampler2D tex_atlas : source_color, filter_linear_mipmap, repeat_enable, hint_default_white;
+uniform float atlas_schwelle = 0.0;
+uniform float dach_schwelle = 0.5; // |Normale.y| ab hier gilt als Dach (ohne Fenster); kleiner = mehr Flaechen ohne Fenster
+uniform float y_offset = 0.0; // Hoehe des Erdgeschossbodens in Weltmetern (Gebaeude auf einem Plateau)
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -35,7 +41,8 @@ void vertex() {
 		t = normalize(cross(vec3(0.0, 1.0, 0.0), wnrm));
 	}
 	vec3 b = cross(wnrm, t);
-	wuv = vec2(dot(wpos, t), -dot(wpos, b));
+	vec3 lp = wpos - vec3(0.0, y_offset, 0.0);
+	wuv = vec2(dot(lp, t), -dot(lp, b));
 	TANGENT = t;
 	BINORMAL = b;
 }
@@ -56,7 +63,7 @@ void fragment() {
 	float rau = clamp(tex_r + (roughness_val - 0.5), 0.05, 1.0);
 
 	// ---------------- Dach: matte Platten mit Fugen, keine Fenster
-	if (abs(wnrm.y) > 0.5) {
+	if (abs(wnrm.y) > dach_schwelle) {
 		vec2 pg = abs(fract(wuv / 6.0) - 0.5);
 		float fuge = 1.0 - smoothstep(0.47, 0.5, max(pg.x, pg.y));
 		ALBEDO = tex_c * 0.42 * mix(0.7, 1.0, fuge);
@@ -69,7 +76,7 @@ void fragment() {
 	vec2 g = vec2(wuv.x / cell.x, -wuv.y / cell.y);
 	vec2 id = floor(g);
 	vec2 f = fract(g);
-	float hoehe = wpos.y;
+	float hoehe = wpos.y - y_offset;
 	bool erdgeschoss = id.y < 1.0;
 
 	// ---------------- Rasterform: Fensteroeffnung, Rahmen, Sprosse
@@ -149,6 +156,15 @@ void fragment() {
 	// Leuchtband an jedem vierten Geschoss
 	float band_licht = (!erdgeschoss && abs(mod(id.y, 4.0)) < 0.5) ? step(0.062, f.y) * step(f.y, 0.085) : 0.0;
 	em += accent.rgb * band_licht * accent_staerke * emission_strength * 0.6;
+
+	vec3 atlas_c = texture(tex_atlas, UV).rgb;
+	float detail = 1.0 - step(atlas_schwelle, dot(atlas_c, vec3(0.299, 0.587, 0.114)));
+	alb = mix(alb, atlas_c * 0.55, detail);
+	met = mix(met, 0.3, detail);
+	rgh = mix(rgh, 0.6, detail);
+	em *= 1.0 - detail;
+	ist_glas *= 1.0 - detail;
+	rahmen_m *= 1.0 - detail;
 
 	ALBEDO = alb;
 	METALLIC = met;

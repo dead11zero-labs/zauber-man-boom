@@ -280,7 +280,7 @@ func _anpassen(b: Node3D, art: int, nr: int) -> void:
 		for i in mi.mesh.get_surface_count():
 			var orig := mi.mesh.surface_get_material(i)
 			if orig is BaseMaterial3D:
-				mi.set_surface_override_material(i, _stil_mat(orig, art, tint))
+				mi.set_surface_override_material(i, _stil_mat(orig as BaseMaterial3D, art, neon.albedo_color))
 	# Dachkante als Neonrahmen und Kollision aus der Huelle im Raum der Stadt
 	var pa := b.transform * _aabb(b)
 	var g := pa.size
@@ -314,21 +314,52 @@ func _leiste(eltern: Node3D, pos: Vector3, groesse: Vector3, mat: Material) -> v
 	eltern.add_child(mi)
 
 
-func _stil_mat(orig: BaseMaterial3D, art: int, tint: Color) -> StandardMaterial3D:
-	var key := "%d_%d" % [orig.get_instance_id(), art]
+## Fassadenmaterial je Gebaeudeart (gebaeude.gdshader: PBR-Wand, Fenster mit Rahmen, Geschossbaender, Leuchtband).
+## Der Shader rechnet in Weltkoordinaten; y_offset legt das Erdgeschoss auf die Plateauhoehe.
+## Flaechen, deren Normale mehr als so stark nach oben/unten zeigt, bekommen keine Fenster (Daecher, Balkonunterseiten)
+const DACH_SCHWELLE := 0.2
+## Palettenfarben unter dieser Helligkeit (Gelaender, Rahmen, Dunkles) bekommen keine Fenster
+const ATLAS_SCHWELLE := 0.3
+const FASSADEN := [
+	# 0 Gewerbe (Hochhaus): glatter Fassadenbeton, kuehles Licht, Leuchtband
+	{"textur": "concrete_tile_facade", "kachel": 4.0, "farbe": Color(0.8, 0.92, 1.1), "zelle": Vector2(3.0, 3.6), "lit": 0.6,
+		"fenster": [Color(0.3, 0.7, 1.0), Color(0.85, 0.95, 1.0), Color(1.0, 0.35, 0.8)], "metall": 0.4, "rauh": 0.4, "band": 1.0},
+	# 1 Wohnen: Backstein, warmes Licht
+	{"textur": "brick_wall_005", "kachel": 3.0, "farbe": Color(1.1, 0.85, 0.95), "zelle": Vector2(2.6, 3.2), "lit": 0.5,
+		"fenster": [Color(1.0, 0.75, 0.4), Color(1.0, 0.55, 0.9), Color(0.4, 0.85, 1.0)], "metall": 0.1, "rauh": 0.6, "band": 0.5},
+	# 2 Industrie: gebuerstete Betonplatten, wenig Fenster, orange Licht
+	{"textur": "brushed_concrete_04", "kachel": 5.0, "farbe": Color(1.0, 0.95, 0.9), "zelle": Vector2(4.4, 5.0), "lit": 0.3,
+		"fenster": [Color(1.0, 0.6, 0.2), Color(1.0, 0.85, 0.5), Color(1.0, 0.3, 0.15)], "metall": 0.3, "rauh": 0.55, "band": 0.7},
+]
+
+
+func _stil_mat(orig: BaseMaterial3D, art: int, tint: Color) -> Material:
+	var key := "fassade_%d" % art
 	if _mats.has(key):
 		return _mats[key]
-	var m: StandardMaterial3D = orig.duplicate()
-	m.albedo_color = tint * 0.32
-	m.roughness = 0.45
-	m.metallic = 0.35
-	m.emission_enabled = true
-	m.emission_texture = orig.albedo_texture
-	m.emission = tint * 0.7
-	m.emission_energy_multiplier = 0.28
-	m.rim_enabled = true
-	m.rim = 0.15
-	m.rim_tint = 0.8
+	var f: Dictionary = FASSADEN[art]
+	var pfad := "res://assets/texturen/%s/" % f["textur"]
+	var m := ShaderMaterial.new()
+	m.shader = load("res://gebaeude.gdshader")
+	m.set_shader_parameter("tex_diff", load(pfad + "diff.jpg"))
+	m.set_shader_parameter("tex_nor", load(pfad + "nor.jpg"))
+	m.set_shader_parameter("tex_rough", load(pfad + "rough.jpg"))
+	m.set_shader_parameter("tex_size", f["kachel"])
+	m.set_shader_parameter("base_color", f["farbe"])
+	var fenster: Array = f["fenster"]
+	m.set_shader_parameter("window_a", fenster[0])
+	m.set_shader_parameter("window_b", fenster[1])
+	m.set_shader_parameter("window_c", fenster[2])
+	m.set_shader_parameter("lit_chance", f["lit"])
+	m.set_shader_parameter("cell", f["zelle"])
+	m.set_shader_parameter("metallic_val", f["metall"])
+	m.set_shader_parameter("roughness_val", f["rauh"])
+	m.set_shader_parameter("accent", tint)
+	m.set_shader_parameter("accent_staerke", f["band"])
+	m.set_shader_parameter("y_offset", TerrainForm.PLATEAU_H + 0.1)
+	m.set_shader_parameter("dach_schwelle", DACH_SCHWELLE)
+	m.set_shader_parameter("tex_atlas", orig.albedo_texture)
+	m.set_shader_parameter("atlas_schwelle", ATLAS_SCHWELLE)
 	_mats[key] = m
 	return m
 
