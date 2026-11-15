@@ -9,6 +9,11 @@ const RING_RZ := 170.0
 const RING_H := 14.0
 const TURM := Vector2(0, -240)
 const BURGER_POS := Vector2(107, 83)
+## Wassertank-Hochhaus: steht noerdlich der Runenstrasse (frueher z -100, das ragte auf die Fahrbahn)
+const TANK_POS := Vector2(240, -126)
+const TANK_RADIUS := 13.0
+const TANK_STUETZE_H := 8.0
+const TANK_STUETZE_ABSTAND := 8.0   ## Stuetzen stehen bei +-8 m (Diagonale 11,3 m, innerhalb des Tankradius)
 const STRASSE_KACHEL := 5.0     ## Meter pro Asphalt-Kachel
 const BODEN_KACHEL := 4.0       ## Meter pro Pflaster-Kachel
 const RASEN_KACHEL := 3.0       ## Meter pro Rasen-Kachel
@@ -434,7 +439,7 @@ func _sperrzonen() -> void:
 		[Vector2(0, 70), 58.0],       # Runen-Plaza
 		[TURM, 50.0],                 # Zauber-Tower + Aufzug
 		[Vector2(-255, 30), 30.0],    # Brezel-Stand
-		[Vector2(240, -100), 30.0],   # Wassertank
+		[TANK_POS, 30.0],             # Wassertank
 		[Vector2(255, 40), 30.0],     # Popcorn-Labor
 		[Vector2(0, 262), 28.0],      # Floronia-Versteck
 		[BURGER_POS, 44.0],           # Sy-Ci Burgers
@@ -1474,17 +1479,34 @@ func _rohr_mesh(kurve: Array[Vector3], radius: float, seiten: int) -> ArrayMesh:
 
 
 func _wassertank() -> void:
-	var c := Vector3(240, 0, -100)
+	# Hochhaus mit Wassertank auf dem Dach. Der Tank ruht auf vier Stuetzen mit Fussplatten,
+	# Tragring und Kreuzverband; die Stuetzen stehen innerhalb des Tankradius.
+	var c := Vector3(TANK_POS.x, 0, TANK_POS.y)
 	_box(c + Vector3(0, 30, 0), Vector3(38, 60, 38), m_silber)
 	_box(c + Vector3(0, 60.5, 0), Vector3(32, 1, 32), m_ring)
 	var rost := _std(Color(0.3, 0.42, 0.5), 0.0, 0.85, 0.35)
-	for sx in [-1.0, 1.0]:
-		for sz in [-1.0, 1.0]:
-			_zyl(c + Vector3(sx * 12, 65, sz * 12), 0.9, 9.0, rost, false, 8)
-	_zyl(c + Vector3(0, 79, 0), 13.0, 20.0, rost, true, 32)
-	_zyl(c + Vector3(0, 91, 0), 13.5, 4.0, rost, true, 32, 0.8)
-	_zyl(c + Vector3(0, 82, 0), 13.15, 1.2, m_blau, false, 32)
-	_zyl(c + Vector3(0, 74, 0), 13.15, 1.2, m_blau, false, 32)
+	var dach_y := 61.0
+	var tank_y := dach_y + TANK_STUETZE_H
+	var ecken: Array[Vector3] = []
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			var fuss := c + Vector3(sx * TANK_STUETZE_ABSTAND, dach_y, sz * TANK_STUETZE_ABSTAND)
+			ecken.append(fuss)
+			_box(fuss + Vector3(0, 0.15, 0), Vector3(2.6, 0.3, 2.6), m_ring, false)
+			_zyl(fuss + Vector3(0, TANK_STUETZE_H / 2.0, 0), 0.7, TANK_STUETZE_H, rost, false, 10)
+	# Kreuzverband zwischen benachbarten Stuetzen (Reihenfolge: -x-z, -x+z, +x+z, +x-z)
+	var reihum: Array[Vector3] = [ecken[0], ecken[1], ecken[3], ecken[2]]
+	for i in 4:
+		var a := reihum[i]
+		var b := reihum[(i + 1) % 4]
+		_balken(a + Vector3(0, 0.6, 0), b + Vector3(0, TANK_STUETZE_H - 0.8, 0), 0.25, 0.25, rost, false)
+		_balken(a + Vector3(0, TANK_STUETZE_H - 0.8, 0), b + Vector3(0, 0.6, 0), 0.25, 0.25, rost, false)
+	# Tragring direkt unter dem Tankboden
+	_zyl(c + Vector3(0, tank_y - 0.4, 0), TANK_RADIUS - 0.6, 0.8, m_ring, false, 32)
+	_zyl(c + Vector3(0, tank_y + 10.0, 0), TANK_RADIUS, 20.0, rost, true, 32)
+	_zyl(c + Vector3(0, tank_y + 22.0, 0), TANK_RADIUS + 0.5, 4.0, rost, true, 32, 0.8)
+	_zyl(c + Vector3(0, tank_y + 13.0, 0), TANK_RADIUS + 0.15, 1.2, m_blau, false, 32)
+	_zyl(c + Vector3(0, tank_y + 5.0, 0), TANK_RADIUS + 0.15, 1.2, m_blau, false, 32)
 
 
 func _popcorn() -> void:

@@ -8,6 +8,9 @@ const B := 40.0        ## Breite (x)
 const T := 30.0        ## Tiefe (z)
 const H := 9.0         ## Hoehe
 const GALERIE_Y := 4.6
+const GELAENDER_H := 1.05          ## Treppengelaender: Hoehe ueber der Stufenlinie
+const GELAENDER_PFOSTEN_JE := 4    ## ein Pfosten alle n Stufen
+const STUFEN_LED := 0.04           ## Breite des Leuchtstreifens an der Stufenkante
 const STEVE := preload("res://characters/steve.gd")
 const STEVE_SITZ_Y := 0.18  ## Feinjustierung: Hoehe der Sitzflaeche ueber dem Boden
 const MINISPIEL := preload("res://ui/burger_minispiel.gd")
@@ -626,7 +629,7 @@ func _treppe() -> void:
 		var oben := y_unten + (i + 0.5) * (y_oben - y_unten) / stufen
 		var dicke := oben - y_unten
 		_box(Vector3(x0, y_unten + dicke * 0.5, zc), Vector3(breite, dicke, d + 0.01), m["dunkel"], false)
-		_box(Vector3(x0, oben + 0.005, zc + d * 0.35), Vector3(breite, 0.03, d * 0.3), m["cyan"] if i % 2 == 0 else m["blau"], false)
+		_box(Vector3(x0, oben + 0.005, zc + d * 0.5 - STUFEN_LED), Vector3(breite, 0.02, STUFEN_LED), m["cyan"] if i % 2 == 0 else m["blau"], false)
 	var steigung := (y_oben - y_unten) / lauf
 	var winkel := atan(steigung)
 	var laenge := sqrt(lauf * lauf + (y_oben - y_unten) * (y_oben - y_unten))
@@ -636,17 +639,20 @@ func _treppe() -> void:
 	rampe.rotation.x = winkel  # +x-Drehung: hebt die -z-Seite an
 	add_child(rampe)
 	_kol(rampe, Vector3(breite, 0.3, laenge))
-	# Gelaender an beiden Laengsseiten der Treppe
-	for sx in [x0 - breite * 0.5, x0 + breite * 0.5]:
+	# Gelaender an beiden Laengsseiten: senkrechte Pfosten auf den Stufen und zwei schlanke Holme.
+	# (Frueher schraege Glas- und Neonplatten; die wirkten wie eine Rampe neben der Treppe.)
+	var hoehe := y_oben - y_unten
+	for sx: float in [x0 - breite * 0.5, x0 + breite * 0.5]:
 		var seite := Node3D.new()
-		seite.position = Vector3(sx, (y_unten + y_oben) * 0.5 + 0.55, (z_unten + z_oben) * 0.5)
+		seite.position = Vector3(sx, (y_unten + y_oben) * 0.5 + GELAENDER_H * 0.5, (z_unten + z_oben) * 0.5)
 		seite.rotation.x = winkel
 		add_child(seite)
-		var gl := _box(Vector3.ZERO, Vector3(0.08, 1.0, laenge), m["glas"], false, seite)
-		gl.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_box(Vector3(0, 0.55, 0), Vector3(0.14, 0.1, laenge), m["cyan"], false, seite)
-		_box(Vector3(0, -0.5, 0), Vector3(0.1, 0.08, laenge), m["blau"], false, seite)
-		_kol(seite, Vector3(0.1, 1.0, laenge))
+		_box(Vector3(0, GELAENDER_H * 0.5, 0), Vector3(0.07, 0.07, laenge), m["chrom"], false, seite)
+		_box(Vector3(0, 0.0, 0), Vector3(0.04, 0.04, laenge), m["chrom"], false, seite)
+		_kol(seite, Vector3(0.1, GELAENDER_H, laenge))
+		for i in range(0, stufen + 1, GELAENDER_PFOSTEN_JE):
+			var fuss_y := y_unten + hoehe * i / stufen
+			_zyl(Vector3(sx, fuss_y + GELAENDER_H * 0.5, z_unten - i * d), 0.035, GELAENDER_H, m["chrom"], -1.0, 8)
 
 
 func _spielecke() -> void:
