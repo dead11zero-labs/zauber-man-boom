@@ -13,12 +13,19 @@ extends Node
 ##   taste(aktion) -> String    Beschriftung der Aktion fuer das gerade benutzte Geraet ("E", "Y", "AKTION")
 ##   hinweis_binden(label, aktion, format)  haelt einen Label3D-Text wie "%s: SPRECHEN" aktuell
 ##   vibrieren(schwach, stark, dauer)       Rumble auf allen Pads
-## Signal `geraet_geaendert(geraet)`: Tastatur/Maus, Gamepad oder Touch wurde zuletzt benutzt.
+## Signal `geraet_geaendert(geraet)`: Tastatur/Maus, Gamepad oder Touch wurde zuletzt benutzt
+## (auch wenn nur das Pad wechselt, z. B. von Xbox- auf Nintendo-Beschriftung).
+## Signal `pad_verbindung(name, verbunden)`: ein Gamepad wurde an- oder abgesteckt (auch Bluetooth).
+## Die Belegung folgt der Lage der Knoepfe (unten springen, links zaubern, oben interagieren, rechts dash);
+## die Beschriftung richtet sich nach der Pad-Familie: Xbox (A/B/X/Y), Nintendo (B/A/Y/X), PlayStation (Kreuz/Kreis/...).
+## Beim Verbinden und Trennen erscheint kurz eine Meldung am unteren Bildrand.
 ## Das Touch-Overlay (`ui/touch_overlay.gd`) wird hier erzeugt und ist nur im Touch-Betrieb sichtbar.
 
 signal geraet_geaendert(geraet: int)
+signal pad_verbindung(name: String, verbunden: bool)
 
 enum Geraet { TASTATUR, PAD, TOUCH }
+enum PadFamilie { XBOX, NINTENDO, PLAYSTATION }
 
 ## Sticks: radiale Totzone und Kurve (hoeherer Exponent = feinfuehliger um die Mitte)
 const STICK_TOTZONE := 0.18
@@ -44,7 +51,32 @@ const TASTEN := {
 	"ui_accept": ["ENTER", "A", "OK"],
 }
 
+## Beschriftungen je Pad-Familie fuer Aktionen, die vom Xbox-Text in TASTEN abweichen
+const PAD_TASTEN := {
+	PadFamilie.NINTENDO: {
+		"interagieren": "X", "springen": "B", "zaubern": "Y", "dash": "A", "hinweis": "L",
+		"journal": "+", "minimap": "-", "ui_cancel": "A", "ui_accept": "B",
+	},
+	PadFamilie.PLAYSTATION: {
+		"interagieren": "DREIECK", "springen": "KREUZ", "zaubern": "QUADRAT", "dash": "KREIS", "hinweis": "L1",
+		"journal": "OPTIONS", "minimap": "SHARE", "ui_cancel": "KREIS", "ui_accept": "KREUZ",
+	},
+}
+## Namensteile (klein geschrieben), an denen die Pad-Familie erkannt wird
+const NAMEN_NINTENDO: Array[String] = ["nintendo", "pro controller", "joy-con", "switch"]
+const NAMEN_PLAYSTATION: Array[String] = ["playstation", "dualsense", "dualshock", "ps3", "ps4", "ps5", "sony"]
+## Meldung beim An- und Abstecken eines Pads
+const MELDUNG_DAUER := 3.0
+const MELDUNG_SCHRIFT := 20
+const MELDUNG_FARBE := Color(0.3, 0.95, 1.0)
+const MELDUNG_EBENE := 70
+
 var geraet: int = Geraet.TASTATUR
+## Zuletzt benutztes Pad und dessen Familie (bestimmt die Tastenbeschriftung)
+var pad_familie: int = PadFamilie.XBOX
+var _pad_id := -1
+var _meldung: Label
+var _meldung_zeit := 0.0
 ## Vom Touch-Overlay gesetzter virtueller Stick (x rechts, y vorwaerts)
 var touch_stick := Vector2.ZERO
 var _touch_blick := Vector2.ZERO
@@ -105,6 +137,8 @@ func _ready() -> void:
 	add_child(overlay)
 	if DisplayServer.is_touchscreen_available() and OS.has_feature("mobile") or TOUCH_ARGUMENT in OS.get_cmdline_user_args():
 		_geraet_setzen(Geraet.TOUCH)
+	_meldung_bauen()
+	Input.joy_connection_changed.connect(_pad_gewechselt)
 	_herzen_alt = GameState.herzen
 	EventBus.herzen_geaendert.connect(_herzen_geaendert)
 	EventBus.spieler_gestorben.connect(func() -> void: vibrieren(RUMBLE_TOD.x, RUMBLE_TOD.y, RUMBLE_TOD.z))
@@ -128,6 +162,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		_geraet_setzen(Geraet.TOUCH)
 	elif event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > PAD_ERKENNUNG):
+		_pad_merken(event.device)
 		_geraet_setzen(Geraet.PAD)
 	elif event is InputEventKey or (event is InputEventMouse and event.device != InputEvent.DEVICE_ID_EMULATION):
 		# Aus Touch erzeugte Maus-Ereignisse (device -1) schalten nicht zurueck
@@ -143,6 +178,65 @@ func _geraet_setzen(neu: int) -> void:
 		touch_stick = Vector2.ZERO
 		_touch_blick = Vector2.ZERO
 	geraet_geaendert.emit(neu)
+
+
+## Familie eines Pads aus seinem Namen ("Pro Controller" -> Nintendo). Unbekannte Pads gelten als Xbox.
+func familie_von(pad_name: String) -> int:
+	var n := pad_name.to_lower()
+	for teil in NAMEN_NINTENDO:
+		if n.contains(teil):
+			return PadFamilie.NINTENDO
+	for teil in NAMEN_PLAYSTATION:
+		if n.contains(teil):
+			return PadFamilie.PLAYSTATION
+	return PadFamilie.XBOX
+
+
+## Merkt sich das benutzte Pad; wechselt die Familie, werden alle Tastenhinweise neu beschriftet.
+func _pad_merken(id: int) -> void:
+	if id == _pad_id:
+		return
+	_pad_id = id
+	var familie := familie_von(Input.get_joy_name(id))
+	if familie != pad_familie:
+		pad_familie = familie
+		if geraet == Geraet.PAD:
+			geraet_geaendert.emit(geraet)
+
+
+func _pad_gewechselt(id: int, verbunden: bool) -> void:
+	var pad_name := Input.get_joy_name(id) if verbunden else "GAMEPAD"
+	if id == _pad_id:
+		_pad_id = -1   # beim naechsten Tastendruck neu erkennen
+	pad_verbindung.emit(pad_name, verbunden)
+	_meldung.text = "// %s %s" % [pad_name.to_upper(), "VERBUNDEN" if verbunden else "GETRENNT"]
+	_meldung.visible = true
+	_meldung_zeit = MELDUNG_DAUER
+
+
+func _meldung_bauen() -> void:
+	var ebene := CanvasLayer.new()
+	ebene.layer = MELDUNG_EBENE
+	add_child(ebene)
+	_meldung = Label.new()
+	_meldung.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_meldung.offset_top = -MELDUNG_SCHRIFT * 3.0
+	_meldung.offset_bottom = -MELDUNG_SCHRIFT
+	_meldung.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_meldung.add_theme_font_size_override("font_size", MELDUNG_SCHRIFT)
+	_meldung.add_theme_color_override("font_color", MELDUNG_FARBE)
+	_meldung.add_theme_color_override("font_outline_color", Color(0, 0.05, 0.15))
+	_meldung.add_theme_constant_override("outline_size", 6)
+	_meldung.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_meldung.visible = false
+	ebene.add_child(_meldung)
+
+
+func _process(delta: float) -> void:
+	if _meldung_zeit > 0.0:
+		_meldung_zeit -= delta
+		if _meldung_zeit <= 0.0:
+			_meldung.visible = false
 
 
 func ist_touch() -> bool:
@@ -204,6 +298,8 @@ func touch_blick_nehmen() -> Vector2:
 func taste(aktion: String) -> String:
 	if not TASTEN.has(aktion):
 		return aktion.to_upper()
+	if geraet == Geraet.PAD and PAD_TASTEN.has(pad_familie) and PAD_TASTEN[pad_familie].has(aktion):
+		return PAD_TASTEN[pad_familie][aktion]
 	return TASTEN[aktion][geraet]
 
 
