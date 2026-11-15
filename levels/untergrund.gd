@@ -261,7 +261,8 @@ func _schacht_bauen() -> void:
 		_kol(Vector3(spur_x, y_mitte, z_mitte), Vector3(2.0, 0.3, laenge + 0.1), dreh)
 		_lampe(Vector3(2.0, y_oben - 0.5, 2.0), LICHT_STANDARD if k % 2 == 0 else LICHT_HALLE, 1.4, 9.0)
 	# Schachtwaende (Stapel) auf West-, Ost- und Suedkante aller drei Zellen, Nordkante erst ab dem ersten Podest
-	var reihen := int(ceil((absf(BODEN_Y) + 0.5) / WAND_H))
+	# Nur ganze Reihen unterhalb des Strassenniveaus: sonst ragt die oberste Wandreihe durch den Ladenboden
+	var reihen := int(floor(absf(BODEN_Y) / WAND_H))
 	for i in reihen:
 		var y := BODEN_Y + i * WAND_H
 		for z in [-2.0, 2.0, 6.0]:

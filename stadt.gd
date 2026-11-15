@@ -19,8 +19,11 @@ const RATHAUS_POS := Vector2(42, 0)        ## Front nach Westen zur Zauber-Allee
 const KLINIK_POS := Vector2(62, -56)       ## Front nach Sueden zur Altstadtgasse, Vorfahrt davor
 ## 6twelve-Filiale am Suedostrand (levels/sechs_zwoelf.gd, um 180 Grad gedreht: Eingang und Parkplatz nach Norden zum Schattenkai)
 ## und geheimer Abgang zum Untergrund-Komplex (levels/untergrund.gd)
-const LADEN_POS := Vector2(250, 245)
+const LADEN_POS := Vector2(250, 211)   ## Parkplatzkante liegt direkt am Gehweg des Schattenkais (z 206,6)
 const LADEN_DREH := 180.0
+const LADEN_PARKPLATZ_X := Vector2(-17.1, 7.4)   ## Parkplatz im Modellraum (x von..bis)
+const LADEN_PARKPLATZ_Z := 4.3                    ## vordere Parkplatzkante im Modellraum
+const LADEN_ZUFAHRT_Z0 := 203.5                   ## Fahrbahnrand des Schattenkais (Welt-z)
 const SCHACHT_LAENGE := 12.2      ## Schacht-Grundflaeche x 0..4, z -4..8,2 ab Abgangspunkt (levels/untergrund.gd)
 const SCHACHT_BREITE := 4.0
 const TERRAIN_SCHACHT_Y := -40.0   ## Gelaendehoehe unter dem Schacht (unter dem Komplex)
@@ -492,7 +495,7 @@ func _sperrzonen() -> void:
 		Rect2(-59, -196, 42, 27),     # Museum
 		Rect2(14, -21, 44, 42),       # Stadtverwaltung mit Vorplatz
 		Rect2(40, -70, 48, 34),       # Stadtklinik mit Rettungsvorfahrt
-		Rect2(214, 204, 98, 82),      # 6twelve mit Parkplatz und Zufahrt
+		Rect2(234, 204, 38, 40),      # 6twelve mit Parkplatz und Hofmauer
 	]
 	linien = [
 		[_fluss_ost(), FLUSS_SPERRE],
@@ -720,11 +723,12 @@ func _abgang_pos() -> Vector2:
 	return LADEN_POS - Vector2(sz.LUKE_X.y, sz.LUKE_Z.y)
 
 
-## Loch in der Stadtplatte (nur ueber der ersten Treppenspur, damit die Luke unauffaellig bleibt).
+## Loch in der Stadtplatte ueber beiden Treppenspuren (liegt ganz unter dem Fliesenboden des Ladens, der selbst
+## nur ueber der ersten Spur offen ist).
 func _luken_loch() -> Rect2:
 	var sz := load("res://levels/sechs_zwoelf.gd")
 	var o := _abgang_pos()
-	return Rect2(o.x, o.y, sz.LUKE_X.y - sz.LUKE_X.x, sz.LUKE_Z.y - sz.LUKE_Z.x)
+	return Rect2(o.x, o.y, SCHACHT_BREITE, sz.LUKE_Z.y - sz.LUKE_Z.x)
 
 
 ## Loch der Sohle: ganze Schachtflaeche (die Waende laufen durch die Sohle).
@@ -1627,8 +1631,8 @@ func _oeffentliche_gebaeude() -> void:
 
 ## 6twelve-Filiale am Suedostrand, Zufahrt vom Schattenkai und der geheime Untergrund-Komplex darunter
 func _laden_und_abgang() -> void:
-	# Zufahrt: Asphaltstreifen vom Schattenkai zum Parkplatz
-	_flaeche(Rect2(LADEN_POS.x - 3.0, 204.0, 14.0, 37.0), 0.06, _aussen_mat("strasse_asphalt", STRASSE_KACHEL, Color(0.28, 0.28, 0.3), 0.0), false)
+	# Zufahrt: Asphalt vom Fahrbahnrand des Schattenkais bis zur Parkplatzkante, ueber die ganze Parkplatzbreite
+	_flaeche(Rect2(LADEN_POS.x - LADEN_PARKPLATZ_X.y, LADEN_ZUFAHRT_Z0, LADEN_PARKPLATZ_X.y - LADEN_PARKPLATZ_X.x, LADEN_POS.y - LADEN_PARKPLATZ_Z - LADEN_ZUFAHRT_Z0 + 0.3), 0.05, _aussen_mat("strasse_asphalt", STRASSE_KACHEL, Color(0.28, 0.28, 0.3), 0.0), false)
 	_haus_skript("res://levels/sechs_zwoelf.gd", Vector3(LADEN_POS.x, 0.0, LADEN_POS.y), LADEN_DREH)
 	var o := _abgang_pos()
 	_haus_skript("res://levels/untergrund.gd", Vector3(o.x, 0.0, o.y), 0.0)
@@ -1636,8 +1640,8 @@ func _laden_und_abgang() -> void:
 
 
 ## Das Terrain3D-Gelaende liegt unter der Stadtplatte bei y -1,5 und wuerde den Schacht blockieren:
-## Dort wird die Hoehenkarte tief abgesenkt (Rand je ein Pixel mehr als die Schachtflaeche); ein Kontrollkarten-Loch
-## liess die Kollision stehen, abgesenkte Hoehen nicht.
+## Dort wird die Hoehenkarte unter dem ganzen Komplex tief abgesenkt; ein Kontrollkarten-Loch liess die Kollision
+## stehen, abgesenkte Hoehen nicht. Sichtbar ist das nicht, das Gelaende liegt dort unter Platte und Sohle.
 func _terrain_loch() -> void:
 	var t := get_node_or_null("../Terrain")
 	if t == null:
@@ -1645,7 +1649,11 @@ func _terrain_loch() -> void:
 	var daten = t.get_data()
 	if daten == null:
 		return
-	var r := _schacht_loch().grow(float(t.vertex_spacing))
+	# Ganze Grundflaeche des Komplexes (Karte aus levels/untergrund.gd) plus zwei Pixel Rand: Sonst steht am Rand
+	# der Absenkung eine steile Gelaendeflanke quer durch die unterirdischen Raeume.
+	var ug := load("res://levels/untergrund.gd")
+	var o := _abgang_pos()
+	var r := Rect2(o.x - ug.SCHACHT_SPALTE * ug.ZELLE, o.y - ug.SCHACHT_ZEILE * ug.ZELLE, ug.KARTE[0].length() * ug.ZELLE, ug.KARTE.size() * ug.ZELLE).grow(2.0 * t.vertex_spacing)
 	var x := r.position.x
 	while x <= r.end.x:
 		var z := r.position.y
@@ -1654,6 +1662,10 @@ func _terrain_loch() -> void:
 			z += t.vertex_spacing
 		x += t.vertex_spacing
 	daten.update_maps(Terrain3DRegion.TYPE_HEIGHT, true, false)
+	# Kollision neu aufbauen (Modus FULL_GAME baut sie sonst nur einmal beim Start)
+	var kol = t.get("collision")
+	if kol != null and kol.has_method("build"):
+		kol.build()
 
 
 func _haus_skript(skript: String, pos: Vector3, dreh: float) -> void:
