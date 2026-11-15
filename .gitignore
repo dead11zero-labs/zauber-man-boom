@@ -4,3 +4,6 @@
 
 # Lokale Werkzeug-Einstellungen
 .claude/settings.local.json
+
+# Lizenz Alstra Infinite: keine Weitergabe/Upload in Repos
+/imported_models/cityfolks/

@@ -16,6 +16,7 @@ const POPCORN_POS := Vector2(255, 40)
 const BUECHEREI_POS := Vector2(-33, -40)   ## Front nach Osten zur Zauber-Allee
 const MUSEUM_POS := Vector2(-38, -182)     ## Front nach Norden zur Tower-Allee
 const RATHAUS_POS := Vector2(42, 0)        ## Front nach Westen zur Zauber-Allee, mit Vorplatz
+const KLINIK_POS := Vector2(62, -56)       ## Front nach Sueden zur Altstadtgasse, Vorfahrt davor
 const TANK_RADIUS := 13.0
 const TANK_STUETZE_H := 8.0
 const TANK_STUETZE_ABSTAND := 8.0   ## Stuetzen stehen bei +-8 m (Diagonale 11,3 m, innerhalb des Tankradius)
@@ -161,6 +162,7 @@ func _ready() -> void:
 	_burger()
 	_neonmarkt()
 	_oeffentliche_gebaeude()
+	_strassen_deko()
 	_gurkenfeld()
 	_floronia()
 	_viertel_bauen()
@@ -479,6 +481,7 @@ func _sperrzonen() -> void:
 		Rect2(-47, -59, 28, 38),      # Buecherei
 		Rect2(-59, -196, 42, 27),     # Museum
 		Rect2(14, -21, 44, 42),       # Stadtverwaltung mit Vorplatz
+		Rect2(40, -70, 48, 34),       # Stadtklinik mit Rettungsvorfahrt
 	]
 	linien = [
 		[_fluss_ost(), FLUSS_SPERRE],
@@ -1568,6 +1571,14 @@ func _oeffentliche_gebaeude() -> void:
 	_haus("res://levels/buecherei.gd", BUECHEREI_POS, 90.0)
 	_haus("res://levels/museum.gd", MUSEUM_POS, 180.0)
 	_haus("res://levels/rathaus.gd", RATHAUS_POS, -90.0)
+	_haus("res://levels/krankenhaus.gd", KLINIK_POS, 0.0)
+
+
+## Hydranten und kleine Baustellen entlang der Strassen (levels/strassen_deko.gd)
+func _strassen_deko() -> void:
+	var d := Node3D.new()
+	d.set_script(load("res://levels/strassen_deko.gd"))
+	add_child(d)
 
 
 ## Setzt ein begehbares Haus (Unterklasse von levels/haus.gd). `dreh`: Grad um y; die Front zeigt
