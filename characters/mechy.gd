@@ -37,6 +37,7 @@ var _im_dialog := false
 
 
 func _ready() -> void:
+	add_to_group("maschine")  # Zutrittskontrolle im Zauber-Tower (levels/scanner_schleuse.gd)
 	var res: Resource = load(modell)
 	if not (res is PackedScene):
 		push_warning("Mechy: Modell nicht gefunden: " + modell)

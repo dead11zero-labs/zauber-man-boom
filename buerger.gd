@@ -28,6 +28,7 @@ static func verfuegbar() -> bool:
 
 
 func _ready() -> void:
+	add_to_group("mensch")  # Zutrittskontrolle im Zauber-Tower (levels/scanner_schleuse.gd)
 	var pfad: String = MODELLE.pick_random()
 	_figur = (load(pfad) as PackedScene).instantiate() as Node3D
 	$Modell.add_child(_figur)

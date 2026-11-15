@@ -8,6 +8,7 @@ const B := 40.0        ## Breite (x)
 const T := 30.0        ## Tiefe (z)
 const H := 9.0         ## Hoehe
 const GALERIE_Y := 4.6
+const STUFEN_PLATTE := 0.1         ## Dicke einer Trittplatte
 const GELAENDER_H := 1.05          ## Treppengelaender: Hoehe ueber der Stufenlinie
 const GELAENDER_PFOSTEN_JE := 4    ## ein Pfosten alle n Stufen
 const STUFEN_LED := 0.04           ## Breite des Leuchtstreifens an der Stufenkante
@@ -627,8 +628,9 @@ func _treppe() -> void:
 	for i in stufen:
 		var zc := z_unten - (i + 0.5) * d
 		var oben := y_unten + (i + 0.5) * (y_oben - y_unten) / stufen
-		var dicke := oben - y_unten
-		_box(Vector3(x0, y_unten + dicke * 0.5, zc), Vector3(breite, dicke, d + 0.01), m["dunkel"], false)
+		# Offene Stufen (Trittplatte plus Setzstufe) statt eines massiven Keils: von der Seite entsteht keine Schraege
+		_box(Vector3(x0, oben - STUFEN_PLATTE * 0.5, zc), Vector3(breite, STUFEN_PLATTE, d + 0.01), m["dunkel"], false)
+		_box(Vector3(x0, oben - (y_oben - y_unten) / stufen * 0.5, zc + d * 0.5 - 0.02), Vector3(breite, (y_oben - y_unten) / stufen, 0.04), m["dunkel"], false)
 		_box(Vector3(x0, oben + 0.005, zc + d * 0.5 - STUFEN_LED), Vector3(breite, 0.02, STUFEN_LED), m["cyan"] if i % 2 == 0 else m["blau"], false)
 	var steigung := (y_oben - y_unten) / lauf
 	var winkel := atan(steigung)

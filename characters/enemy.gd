@@ -65,6 +65,7 @@ var _form: CollisionShape3D
 
 
 func _ready() -> void:
+	add_to_group("maschine")  # Zutrittskontrolle im Zauber-Tower (levels/scanner_schleuse.gd)
 	if daten == null:
 		daten = _standard_daten()
 	lp = daten.max_lp

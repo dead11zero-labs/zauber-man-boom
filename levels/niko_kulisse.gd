@@ -1,12 +1,13 @@
 extends Node3D
-## Fern-Kulisse: Der Cyber-Komplex "futuristic low poly city by niko" schwebt als Insel ueber den Huegeln
-## hinter der Ostgrenze und ist von der Stadt aus als Skyline zu sehen. Nicht betretbar, ohne Kollision,
+## Fern-Kulisse: Der Cyber-Komplex "futuristic low poly city by niko" steht fest auf den Huegeln
+## hinter der Ostgrenze (frueher schwebte er, das sah seltsam aus) und ist von der Stadt aus als Skyline zu sehen. Nicht betretbar, ohne Kollision,
 ## wirft keinen Schatten. Modell: imported_models/niko_stadt/niko_stadt.glb (aus der .blend-Datei exportiert,
 ## Materialien neu als Principled gesetzt). Wird von stadt.gd erzeugt. Keine Signale, keine Exporte.
 
 const MODELL := "res://imported_models/niko_stadt/niko_stadt.glb"
 const SKALA := 0.55
-const MITTE := Vector3(455.0, 55.0, -40.0)   ## Unterkante der Insel, Mitte
+const MITTE_XZ := Vector2(455.0, -40.0)       ## Mitte des Fusses
+const EINSINKEN := 3.0                        ## Meter, die der Fuss ins Gelaende ragt (kein Spalt am Hang)
 const DREHUNG := 90.0                        ## Grad um y: Hauptseite zeigt zur Stadt
 const LICHT_FARBE := Color(0.2, 0.9, 1.0)
 
@@ -37,12 +38,12 @@ func _ready() -> void:
 	huelle.add_child(n)
 	huelle.scale = Vector3.ONE * SKALA
 	huelle.rotation_degrees.y = DREHUNG
-	position = MITTE
-	# Schwaches Leuchten unter der Insel
+	position = Vector3(MITTE_XZ.x, TerrainForm.hoehe(MITTE_XZ.x, MITTE_XZ.y) - EINSINKEN, MITTE_XZ.y)
+	# Schwaches Leuchten am Fuss
 	var l := OmniLight3D.new()
 	l.light_color = LICHT_FARBE
 	l.light_energy = 2.0
 	l.omni_range = 120.0
-	l.position = Vector3(0, -12.0, 0)
+	l.position = Vector3(0, 6.0, 0)
 	l.shadow_enabled = false
 	add_child(l)

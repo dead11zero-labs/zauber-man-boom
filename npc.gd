@@ -32,6 +32,7 @@ var _sprung := 0.0
 
 
 func _ready() -> void:
+	add_to_group("maschine")  # Zutrittskontrolle im Zauber-Tower (levels/scanner_schleuse.gd)
 	randomize()
 	tempo = randf_range(1.8, 3.0)
 	_spur = randf_range(GEHWEG_MIN, GEHWEG_MAX) * (1.0 if randf() < 0.5 else -1.0)

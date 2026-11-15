@@ -1137,10 +1137,13 @@ func _foyer(marmor: Material, holz: Material, wand: Material) -> void:
 	# Sicherheitsschleuse vor dem Aufzug: Mittelgasse 3 m, Glasflaechen und Stahlsaeulen
 	var sz0 := cz + 1.5
 	for sx in [-1.0, 1.0]:
-		_box(Vector3(cx + sx * 1.5, 0.55, sz0), Vector3(0.3, 1.1, 1.0), stahl, true)
-		_box(Vector3(cx + sx * 1.5, 1.12, sz0), Vector3(0.32, 0.04, 1.02), _std(Color(0.3, 0.9, 0.5), 1.2), false)
 		_box(Vector3(cx + sx * 3.4, 0.8, sz0), Vector3(3.4, 1.6, 0.06), glas, true)
 		_box(Vector3(cx + sx * 3.4, 1.62, sz0), Vector3(3.4, 0.05, 0.1), stahl, false)
+	# Mensch-Maschinen-Scanner in der Gasse: Zauber-Man und Menschen duerfen durch, Maschinen nicht
+	var scanner := Node3D.new()
+	scanner.set_script(load("res://levels/scanner_schleuse.gd"))
+	scanner.position = Vector3(cx, 0.0, sz0)
+	add_child(scanner)
 	# Sitzgruppe (Ost): Teppich, zwei Sofas, Couchtisch
 	_box(Vector3(cx + 8.5, 0.09, cz + 5.0), Vector3(7.0, 0.04, 5.0), teppich, false)
 	for sz in [-1.0, 1.0]:
