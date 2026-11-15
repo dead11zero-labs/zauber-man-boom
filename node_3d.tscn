@@ -1,0 +1,149 @@
+[gd_scene format=3 uid="uid://ble0iearihj2s"]
+
+[ext_resource type="PackedScene" path="res://spieler.tscn" id="1_spieler"]
+[ext_resource type="Script" uid="uid://5kirb5d17cw" path="res://stadt.gd" id="2_stadt"]
+[ext_resource type="Terrain3DAssets" uid="uid://l0opdi15oi5i" path="res://terrain/assets.tres" id="3_jka67"]
+[ext_resource type="Script" uid="uid://djvxx0tpb4yeg" path="res://terrain_bauer.gd" id="4_i5arm"]
+[ext_resource type="Script" uid="uid://dd4vhepnpovwy" path="res://wald.gd" id="5_wc5p8"]
+[ext_resource type="Script" uid="uid://b1m11orm6eh5y" path="res://sammler.gd" id="6_sammler"]
+[ext_resource type="PackedScene" path="res://gurkenmonster.tscn" id="7_monster"]
+[ext_resource type="Script" uid="uid://bc7m3nqky4058" path="res://npcs.gd" id="8_npcs"]
+[ext_resource type="Script" uid="uid://187og7f5w7w8" path="res://neustadt.gd" id="9_neu"]
+[ext_resource type="Script" uid="uid://cb0mp1jbn1341" path="res://levels/bezirke.gd" id="10_bez"]
+[ext_resource type="Script" uid="uid://bw5ekuixolsmx" path="res://characters/iggy.gd" id="11_iggy"]
+[ext_resource type="Script" uid="uid://dwdsai0blkybg" path="res://levels/bezirk_tor.gd" id="12_tor"]
+[ext_resource type="Script" uid="uid://bj23ws24vni0j" path="res://collectibles/sammelobjekte_platzierer.gd" id="13_sam"]
+[ext_resource type="Script" path="res://levels/test_aufbau.gd" id="14_test"]
+[ext_resource type="Script" path="res://levels/checkpoints.gd" id="15_cp"]
+[ext_resource type="Script" path="res://levels/drohnen_spawner.gd" id="16_spawn"]
+[ext_resource type="Script" path="res://characters/rollen_npcs.gd" id="17_rollen"]
+[ext_resource type="Script" path="res://levels/story.gd" id="18_story"]
+
+[sub_resource type="Gradient" id="Gradient_jsk3o"]
+offsets = PackedFloat32Array(0.2, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_4arys"]
+noise_type = 2
+frequency = 0.03
+cellular_jitter = 3.0
+cellular_return_type = 0
+domain_warp_enabled = true
+domain_warp_type = 1
+domain_warp_amplitude = 50.0
+domain_warp_fractal_type = 2
+domain_warp_fractal_lacunarity = 1.5
+domain_warp_fractal_gain = 1.0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6iypd"]
+noise = SubResource("FastNoiseLite_4arys")
+color_ramp = SubResource("Gradient_jsk3o")
+seamless = true
+
+[sub_resource type="Terrain3DMaterial" id="Terrain3DMaterial_tereu"]
+_shader_parameters = {
+&"bias_distance": null,
+&"blend_sharpness": null,
+&"depth_blur": null,
+&"distant_normal_scale": null,
+&"flat_terrain_normals": null,
+&"general_uniforms": null,
+&"ground_level": null,
+&"macro_variation": null,
+&"macro_variation1": null,
+&"macro_variation2": null,
+&"macro_variation_slope": null,
+&"mipmap_bias": null,
+&"mipmaps": null,
+&"noise1_angle": null,
+&"noise1_offset": null,
+&"noise1_scale": null,
+&"noise2_scale": null,
+&"noise_texture": SubResource("NoiseTexture2D_6iypd"),
+&"private": null,
+&"region_blend": null
+}
+macro_variation_enabled = true
+projection_enabled = true
+
+[node name="Node3D" type="Node3D" unique_id=1902932369]
+metadata/__editor_changed = true
+
+[node name="Stadt" type="Node3D" parent="." unique_id=167759472]
+script = ExtResource("2_stadt")
+
+[node name="Spieler" parent="." unique_id=1213796085 instance=ExtResource("1_spieler")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 115)
+
+[node name="Terrain" type="Terrain3D" parent="." unique_id=1058369197]
+data_directory = "res://terrain/daten"
+material = SubResource("Terrain3DMaterial_tereu")
+assets = ExtResource("3_jka67")
+collision_mode = 3
+vertex_spacing = 4.0
+displacement_sharpness = 0.5
+top_level = true
+script = ExtResource("4_i5arm")
+metadata/_edit_lock_ = true
+
+[node name="Wald" type="Node3D" parent="." unique_id=837680254]
+script = ExtResource("5_wc5p8")
+
+[node name="Kristalle" type="Node3D" parent="." unique_id=1333077952]
+script = ExtResource("6_sammler")
+
+[node name="GurkenMonster" parent="." unique_id=1583857803 instance=ExtResource("7_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -250, 0.2, -206)
+
+[node name="SynthBots" type="Node3D" parent="." unique_id=1458196010]
+script = ExtResource("8_npcs")
+
+[node name="Neustadt" type="Node3D" parent="." unique_id=811721743]
+script = ExtResource("9_neu")
+
+[node name="Bezirke" type="Node" parent="." unique_id=294117843]
+script = ExtResource("10_bez")
+
+[node name="Iggy" type="Node3D" parent="." unique_id=2058526424]
+script = ExtResource("11_iggy")
+
+[node name="NeonBasarTor" type="Node3D" parent="." unique_id=1092142657]
+script = ExtResource("12_tor")
+
+[node name="Sammelobjekte" type="Node3D" parent="." unique_id=37321557]
+script = ExtResource("13_sam")
+
+[node name="TestAufbau" type="Node3D" parent="."]
+script = ExtResource("14_test")
+
+[node name="Checkpoints" type="Node3D" parent="."]
+script = ExtResource("15_cp")
+
+[node name="SpawnerTestraum" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 138)
+script = ExtResource("16_spawn")
+arten = Array[int]([0, 1, 0])
+max_aktiv = 0
+patrouille_radius = 24.0
+
+[node name="SpawnerHafen" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 225, 0, 25)
+script = ExtResource("16_spawn")
+arten = Array[int]([0])
+max_aktiv = 1
+intervall = 30.0
+aktiv_radius = 50.0
+
+[node name="SpawnerTower" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -150)
+script = ExtResource("16_spawn")
+arten = Array[int]([0])
+max_aktiv = 1
+intervall = 30.0
+aktiv_radius = 50.0
+
+[node name="RollenNpcs" type="Node3D" parent="."]
+script = ExtResource("17_rollen")
+
+[node name="Story" type="Node" parent="."]
+script = ExtResource("18_story")

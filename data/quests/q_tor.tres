@@ -1,0 +1,12 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/quests/quest_daten.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "q_tor"
+titel = "Neues Revier"
+ziel = "Betritt den Neon-Basar"
+beschreibung = "Mit Seite 1 geht das Tor zum Neon-Basar auf."
+abschluss_ereignis = "bezirk:2"
+naechste = ""

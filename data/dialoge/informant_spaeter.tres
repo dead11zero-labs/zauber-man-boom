@@ -1,0 +1,16 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/dialoge/dialog_daten.gd" id="1"]
+[ext_resource type="Script" path="res://data/dialoge/dialog_zeile.gd" id="2"]
+
+[sub_resource type="Resource" id="z0"]
+script = ExtResource("2")
+sprecher = "Informant"
+text = "Runen glimmern leise. Geh nah ran, dann hörst du sie summen. Und Datenchips? Die liegen meist da, wo jemand etwas verstecken wollte."
+audio = ""
+
+[resource]
+script = ExtResource("1")
+id = "informant_spaeter"
+ueberspringbar = false
+zeilen = Array[Resource]([SubResource("z0")])

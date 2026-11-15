@@ -1,0 +1,51 @@
+[gd_resource type="Terrain3DAssets" format=3 uid="uid://l0opdi15oi5i"]
+
+[ext_resource type="Texture2D" uid="uid://chcjssirux5x" path="res://assets/terrain/grass_ground_alb_h.png" id="1_8xyig"]
+[ext_resource type="Texture2D" uid="uid://6176nmirf5g8" path="res://assets/terrain/grass_ground_nrm_r.png" id="2_qibj5"]
+[ext_resource type="Texture2D" uid="uid://bl46yhl62f6wb" path="res://assets/terrain/forrest_ground_01_alb_h.png" id="3_c8ieb"]
+[ext_resource type="Texture2D" uid="uid://dgrtmkt2k6ne6" path="res://assets/terrain/forrest_ground_01_nrm_r.png" id="4_jlkbp"]
+[ext_resource type="Texture2D" uid="uid://b0xinptd42l1f" path="res://assets/terrain/rocky_terrain_alb_h.png" id="5_jiesh"]
+[ext_resource type="Texture2D" uid="uid://b04qh8wlhtivt" path="res://assets/terrain/rocky_terrain_nrm_r.png" id="6_tc68g"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8xyig"]
+transparency = 4
+cull_mode = 2
+vertex_color_use_as_albedo = true
+backlight_enabled = true
+backlight = Color(0.5, 0.5, 0.5, 1)
+distance_fade_mode = 1
+distance_fade_min_distance = 128.0
+distance_fade_max_distance = 96.0
+metadata/terrain3d_generated_material = true
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_qibj5"]
+generated_type = 1
+height_offset = 0.5
+density = 10.0
+material_override = SubResource("StandardMaterial3D_8xyig")
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 128.0
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_c8ieb"]
+name = "Gras"
+albedo_texture = ExtResource("1_8xyig")
+normal_texture = ExtResource("2_qibj5")
+uv_scale = 0.08
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_jlkbp"]
+name = "Waldboden"
+id = 1
+albedo_texture = ExtResource("3_c8ieb")
+normal_texture = ExtResource("4_jlkbp")
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_jiesh"]
+name = "Fels"
+id = 2
+albedo_texture = ExtResource("5_jiesh")
+normal_texture = ExtResource("6_tc68g")
+uv_scale = 0.06
+
+[resource]
+mesh_list = Array[Terrain3DMeshAsset]([SubResource("Terrain3DMeshAsset_qibj5")])
+texture_list = Array[Terrain3DTextureAsset]([SubResource("Terrain3DTextureAsset_c8ieb"), SubResource("Terrain3DTextureAsset_jlkbp"), SubResource("Terrain3DTextureAsset_jiesh")])

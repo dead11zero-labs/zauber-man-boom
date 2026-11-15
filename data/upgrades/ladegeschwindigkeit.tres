@@ -1,0 +1,11 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/upgrades/upgrade_daten.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ladegeschwindigkeit"
+titel = "Ladegeschwindigkeit"
+beschreibung = "Der Ladeschuss ist schneller voll."
+kosten = PackedInt32Array(4, 10, 20)
+boni = PackedFloat32Array(0.25, 0.5, 1.0)

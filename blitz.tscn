@@ -1,0 +1,66 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://blitz.gd" id="1_script"]
+
+[sub_resource type="SphereShape3D" id="Shape_1"]
+radius = 0.3
+
+[sub_resource type="CapsuleMesh" id="Kern_mesh"]
+radius = 0.07
+height = 1.3
+
+[sub_resource type="StandardMaterial3D" id="Kern_mat"]
+shading_mode = 0
+albedo_color = Color(0.85, 1, 1, 1)
+
+[sub_resource type="CapsuleMesh" id="Glow_mesh"]
+radius = 0.2
+height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="Glow_mat"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.2, 0.7, 1, 0.35)
+
+[sub_resource type="SphereMesh" id="Funke_mesh"]
+radius = 0.04
+height = 0.08
+
+[sub_resource type="StandardMaterial3D" id="Funke_mat"]
+shading_mode = 0
+albedo_color = Color(0.5, 0.9, 1, 1)
+
+[node name="Blitz" type="Area3D"]
+script = ExtResource("1_script")
+
+[node name="Form" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_1")
+
+[node name="Kern" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
+mesh = SubResource("Kern_mesh")
+surface_material_override/0 = SubResource("Kern_mat")
+
+[node name="Glow" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
+mesh = SubResource("Glow_mesh")
+surface_material_override/0 = SubResource("Glow_mat")
+
+[node name="Licht" type="OmniLight3D" parent="."]
+light_color = Color(0.4, 0.8, 1, 1)
+light_energy = 5.0
+omni_range = 8.0
+
+[node name="Funken" type="CPUParticles3D" parent="."]
+amount = 60
+lifetime = 0.4
+local_coords = false
+mesh = SubResource("Funke_mesh")
+material_override = SubResource("Funke_mat")
+emission_shape = 1
+emission_sphere_radius = 0.15
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 1.0
+initial_velocity_max = 3.0
+direction = Vector3(0, 0, 1)
+spread = 180.0

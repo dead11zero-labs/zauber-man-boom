@@ -1,0 +1,41 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://spieler.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://assets/sentinel/sentinel_running.fbx" id="2_lauf"]
+[ext_resource type="PackedScene" path="res://assets/sentinel/sentinel_character.fbx" id="3_steh"]
+[ext_resource type="PackedScene" path="res://assets/sentinel/sentinel_jump.fbx" id="4_sprung"]
+[ext_resource type="Script" path="res://kamera_arm.gd" id="5_arm"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.5
+height = 1.9
+
+[node name="Spieler" type="CharacterBody3D"]
+script = ExtResource("1_script")
+
+[node name="Kollision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="Modell" type="Node3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="Laufen" parent="Modell" instance=ExtResource("2_lauf")]
+visible = false
+
+[node name="Stehen" parent="Modell" instance=ExtResource("3_steh")]
+
+[node name="Springen" parent="Modell" instance=ExtResource("4_sprung")]
+visible = false
+
+[node name="Hand" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 1.2, -0.8)
+
+[node name="KameraArm" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 1.5, 0)
+script = ExtResource("5_arm")
+
+[node name="Kamera" type="Camera3D" parent="KameraArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.2)
+near = 0.1
+far = 3000.0

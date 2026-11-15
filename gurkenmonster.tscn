@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://gurkenmonster.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://imported_models/Gurken-Monster_Model_Sheet/Gurken-Monster_Model_Sheet.glb" id="2_modell"]
+[ext_resource type="Shader" path="res://balken.gdshader" id="3_balken"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 1.7
+height = 5.4
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1"]
+shader = ExtResource("3_balken")
+shader_parameter/fuell = 1.0
+shader_parameter/segmente = 10
+
+[sub_resource type="QuadMesh" id="QuadMesh_1"]
+size = Vector2(5, 0.55)
+
+[node name="GurkenMonster" type="CharacterBody3D"]
+script = ExtResource("1_script")
+
+[node name="Kollision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="Modell" type="Node3D" parent="."]
+transform = Transform3D(-3.2, 0, 0, 0, 3.2, 0, 0, 0, -3.2, 0, 0, 0)
+
+[node name="Figur" parent="Modell" instance=ExtResource("2_modell")]
+
+[node name="Balken" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.8, 0)
+mesh = SubResource("QuadMesh_1")
+material_override = SubResource("ShaderMaterial_1")
+cast_shadow = 0

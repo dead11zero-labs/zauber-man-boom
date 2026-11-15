@@ -1,0 +1,12 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/quests/quest_daten.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "q_informant"
+titel = "Der Informant"
+ziel = "Sprich mit dem Informanten"
+beschreibung = "Ein Informant nahe dem Startpunkt weiß, wo die Seiten des Grimoires gelandet sind."
+abschluss_ereignis = "gespraech:informant"
+naechste = "q_seite1"

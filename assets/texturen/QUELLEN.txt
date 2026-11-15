@@ -1,0 +1,9 @@
+Texturen: Poly Haven (polyhaven.com), Lizenz CC0.
+concrete_tile_facade, brick_wall_005, metal_plate, concrete_moss, brushed_concrete_04
+park_rasen = leafy_grass, park_weg = concrete_tiles_02, park_rinde = bark_brown_02, park_stein = stone_tiles_03 (Poly Haven, CC0, 2k)
+burger: leather_red_03, floor_tiles_06, wood_table_001, square_tiles_02, rubber_tiles, marble_01 (Poly Haven, CC0, 1k)
+foyer: beige_wall_002, dark_paneled_wood, brown_leather, granite_tile, painted_plaster_wall, plaster_grey_04, wood_floor_deck, dark_wood (Poly Haven, CC0, 1k; Ordner foyer_*)
+kantine_*: selbst erzeugt (Python/PIL), keine Fremdrechte
+markt_*: Poly Haven CC0 (floor_tiles_08, plastered_wall_04, long_white_tiles, plank_flooring_02, oak_wood_planks, plywood, ceiling_interior u. a.), markt_prod_*: selbst erzeugt
+markt_boden_fliese, markt_decke_platte: selbst erzeugt (Python/PIL)
+strasse_asphalt = clean_asphalt, boden_pflaster = concrete_pavers_02 (Poly Haven, CC0, 2k)

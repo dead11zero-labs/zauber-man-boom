@@ -1,0 +1,22 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/dialoge/dialog_daten.gd" id="1"]
+[ext_resource type="Script" path="res://data/dialoge/dialog_zeile.gd" id="2"]
+
+[sub_resource type="Resource" id="z0"]
+script = ExtResource("2")
+sprecher = "Clarissa"
+text = "Hi, ich bin Clarissa. Ich baue und kalibriere humanoide Roboter. Gerade flackert das Netz, und meine Jungs hängen alle im Standby."
+audio = ""
+
+[sub_resource type="Resource" id="z1"]
+script = ExtResource("2")
+sprecher = "Clarissa"
+text = "Bring mir später Reparatur-Teile, dann bau ich dir was Schnelles. Bis dahin: Werkstatt zu, Kaffee offen. Und falls du einen kleinen Jungen mit Roboter-Fimmel siehst: der gehört zu mir."
+audio = ""
+
+[resource]
+script = ExtResource("1")
+id = "mechanikerin_erst"
+ueberspringbar = false
+zeilen = Array[Resource]([SubResource("z0"), SubResource("z1")])

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/dialoge/dialog_daten.gd" id="1"]
+[ext_resource type="Script" path="res://data/dialoge/dialog_zeile.gd" id="2"]
+
+[sub_resource type="Resource" id="z0"]
+script = ExtResource("2")
+sprecher = "Informant"
+text = "Psst. Du bist also der Typ mit den Blitzen. Ich höre alles, was durchs Kabelnetz summt."
+audio = ""
+
+[sub_resource type="Resource" id="z1"]
+script = ExtResource("2")
+sprecher = "Informant"
+text = "Die erste Grimoire-Seite liegt hier im Startviertel, bei der Runen-Plaza. Wenn du nicht weiterweißt: H drücken, der Hinweis-Pulse zeigt dir den nächsten Schalter."
+audio = ""
+
+[sub_resource type="Resource" id="z2"]
+script = ExtResource("2")
+sprecher = "Informant"
+text = "Runen verstecken sich dort, wo Städter nicht hinschauen: hinter Ecken, auf Dächern, in Sackgassen. Wo es leise neonfarben summt, lohnt sich ein zweiter Blick."
+audio = ""
+
+[resource]
+script = ExtResource("1")
+id = "informant_erst"
+ueberspringbar = false
+zeilen = Array[Resource]([SubResource("z0"), SubResource("z1"), SubResource("z2")])

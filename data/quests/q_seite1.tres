@@ -1,0 +1,12 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/quests/quest_daten.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "q_seite1"
+titel = "Seite 1"
+ziel = "Finde Grimoire-Seite 1"
+beschreibung = "Iggy hat das Grimoire in sieben Seiten zerrissen. Die erste liegt irgendwo im Startviertel."
+abschluss_ereignis = "seite:1"
+naechste = "q_tor"

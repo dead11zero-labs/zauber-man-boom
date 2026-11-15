@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CollectibleData" format=3]
+
+[ext_resource type="Script" path="res://collectibles/collectible_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "chip_02"
+typ = 2
+wert = 1
+titel = "Einkaufszettel"
+text = "Milch, Gurken, Chili. Nicht die scharfe! Die ist neuerdings lebendig und schlecht gelaunt."
+farbe = Color(0.3, 1, 0.5, 1)
+lore = "Der Zettel gehört einem Marktverkäufer aus dem Neon-Basar. Seit Iggy Inferno das Grimoire zerrissen hat, reagiert sein Chili-Vorrat auf Magie-Strom wie eine Lunte: scharf, schlecht gelaunt und neuerdings lebendig. Merke dir: Milch ist gegen Feuer da, nicht nur für den Kaffee."

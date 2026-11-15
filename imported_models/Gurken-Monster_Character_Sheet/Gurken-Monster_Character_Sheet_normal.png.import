@@ -1,0 +1,45 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://bmyav3j1serxi"
+path.s3tc="res://.godot/imported/Gurken-Monster_Character_Sheet_normal.png-4f0fb3563c058bec6278d71a1d433c78.s3tc.ctex"
+path.etc2="res://.godot/imported/Gurken-Monster_Character_Sheet_normal.png-4f0fb3563c058bec6278d71a1d433c78.etc2.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "90dec88cbc0ce707f442f1a34b73ec7a"
+}
+
+[deps]
+
+source_file="res://imported_models/Gurken-Monster_Character_Sheet/Gurken-Monster_Character_Sheet_normal.png"
+dest_files=["res://.godot/imported/Gurken-Monster_Character_Sheet_normal.png-4f0fb3563c058bec6278d71a1d433c78.s3tc.ctex", "res://.godot/imported/Gurken-Monster_Character_Sheet_normal.png-4f0fb3563c058bec6278d71a1d433c78.etc2.ctex"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
+compress/hdr_compression=1
+compress/normal_map=1
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=1
+roughness/src_normal="res://imported_models/Gurken-Monster_Character_Sheet/Gurken-Monster_Character_Sheet_normal.png"
+process/channel_remap/red=0
+process/channel_remap/green=1
+process/channel_remap/blue=2
+process/channel_remap/alpha=3
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0

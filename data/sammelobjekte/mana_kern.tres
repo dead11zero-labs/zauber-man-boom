@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CollectibleData" format=3]
+
+[ext_resource type="Script" path="res://collectibles/collectible_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "mana_kern"
+typ = 0
+wert = 1
+titel = "Mana-Kern"
+farbe = Color(0.1, 0.9, 1, 1)

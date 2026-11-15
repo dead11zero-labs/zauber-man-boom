@@ -1,0 +1,16 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/dialoge/dialog_daten.gd" id="1"]
+[ext_resource type="Script" path="res://data/dialoge/dialog_zeile.gd" id="2"]
+
+[sub_resource type="Resource" id="z0"]
+script = ExtResource("2")
+sprecher = "Clarissa"
+text = "Noch keine Teile? Macht nichts. Ich kalibriere derweil meinen Arm neu und zocke eine Runde. Zu viel Arbeit macht auch eine Kybernetikerin mürbe."
+audio = ""
+
+[resource]
+script = ExtResource("1")
+id = "mechanikerin_spaeter"
+ueberspringbar = false
+zeilen = Array[Resource]([SubResource("z0")])

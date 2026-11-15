@@ -1,0 +1,21 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://characters/gegner_daten.gd" id="1_daten"]
+
+[resource]
+script = ExtResource("1_daten")
+anzeige_name = "Spaehdrohne"
+max_lp = 3.0
+tempo_patrouille = 3.0
+tempo_jagd = 5.5
+erfassung = 32.0
+verlieren = 50.0
+angriff_reichweite = 22.0
+halteabstand = 13.0
+angriff_pause = 2.8
+ausholen = 0.6
+schaden = 1
+projektil_tempo = 9.0
+schwebe_hoehe = 3.8
+beute_mana = 1
+farbe = Color(1, 0.75, 0.15, 1)

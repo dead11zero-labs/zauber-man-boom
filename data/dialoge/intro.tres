@@ -1,0 +1,40 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://data/dialoge/dialog_daten.gd" id="1"]
+[ext_resource type="Script" path="res://data/dialoge/dialog_zeile.gd" id="2"]
+
+[sub_resource type="Resource" id="z0"]
+script = ExtResource("2")
+sprecher = "Zauber-Man"
+text = "Uff. Mein Kopf brummt wie ein defekter Trafo. Wo bin ich? ... Synth-City. Natürlich. Nur dunkler, als ich sie in Erinnerung habe."
+audio = ""
+
+[sub_resource type="Resource" id="z1"]
+script = ExtResource("2")
+sprecher = "Stimme im Funk"
+text = "Zauber-Man? Hörst du mich? Gut, du lebst. Das Kabelnetz flackert, seit Iggy Inferno das Grimoire zerrissen hat."
+audio = ""
+
+[sub_resource type="Resource" id="z2"]
+script = ExtResource("2")
+sprecher = "Stimme im Funk"
+text = "Sieben Seiten, quer über die Stadt verstreut. Je mehr Magie durch die Leitungen jagt, desto heißer brennt sein Feuer. Magie ist Strom, vergiss das nicht."
+audio = ""
+
+[sub_resource type="Resource" id="z3"]
+script = ExtResource("2")
+sprecher = "Zauber-Man"
+text = "Magie ist Strom. Dann sind Kabel meine Freunde und Schalter meine Zielscheiben. Also: Seiten suchen, Feuerkopf stoppen."
+audio = ""
+
+[sub_resource type="Resource" id="z4"]
+script = ExtResource("2")
+sprecher = "Stimme im Funk"
+text = "Sprich mit dem Informanten bei den Hinterhöfen. Und der Händler tauscht Mana-Kerne gegen Kraft. Drück J, wenn du dein Journal sehen willst."
+audio = ""
+
+[resource]
+script = ExtResource("1")
+id = "intro"
+ueberspringbar = true
+zeilen = Array[Resource]([SubResource("z0"), SubResource("z1"), SubResource("z2"), SubResource("z3"), SubResource("z4")])

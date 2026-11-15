@@ -1,0 +1,2 @@
+Texturen: Poly Haven (polyhaven.com), CC0: grass_ground, forrest_ground_01, rocky_terrain.
+*_alb_h.png = Albedo + Hoehe (Alpha), *_nrm_r.png = Normal (OpenGL) + Roughness (Alpha).

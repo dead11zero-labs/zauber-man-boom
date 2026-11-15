@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CollectibleData" format=3]
+
+[ext_resource type="Script" path="res://collectibles/collectible_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "chip_01"
+typ = 2
+wert = 1
+titel = "Wartungslog 7"
+text = "Netzknoten 12 meldet: Magie-Anteil im Kabelnetz steigt. Wer hat da wieder Zauberstaub in die Leitungen gekippt?"
+farbe = Color(0.3, 1, 0.5, 1)
+lore = "Wartungslog 7 stammt aus den Hinterhöfen von Synth-City. Dort hat jemand vor Jahren Magie ins Kabelnetz geleitet, damit die Stadt nie wieder im Dunkeln sitzt. Das Grimoire war der Hauptschalter dafür. Heute klingt der Techniker nur noch ratlos: Der Magie-Anteil steigt weiter, und niemand weiß, wer die Leitungen anzapft."
