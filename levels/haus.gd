@@ -33,6 +33,7 @@ const GELAENDER_H := 1.05
 const PFOSTEN_JE := 3             ## ein Gelaenderpfosten alle n Stufen
 const RAMPE_DICKE := 0.3
 const LICHT_ABSTAND := 0.5        ## Leuchte haengt so weit unter der Decke
+const SCHILD_MASS := 0.5          ## Schilder: Schrift halb so gross wie der Fassaden-Schriftzug bei gleichem Pixelwert
 const BUCH_FARBEN: Array[Color] = [
 	Color(0.55, 0.12, 0.1), Color(0.12, 0.25, 0.5), Color(0.15, 0.4, 0.22), Color(0.75, 0.6, 0.2),
 	Color(0.35, 0.2, 0.12), Color(0.8, 0.78, 0.7), Color(0.4, 0.15, 0.45), Color(0.1, 0.1, 0.12),
@@ -43,6 +44,9 @@ var breite := 30.0
 var tiefe := 24.0
 var etagen := 2
 var etage_h := 4.5
+## Fensterbaender an Rueckwand und Seitenwaenden (aus = geschlossene Waende, z. B. fuer Ausstellungsflaechen)
+var fenster_hinten := true
+var fenster_seiten := true
 var zeit := 0.0
 var _spieler: Node3D
 var _tueren: Array = []           ## je Tuer: [linkes Blatt, rechtes Blatt, Mitte x, Blattbreite, Oeffnung 0..1, z]
@@ -143,6 +147,7 @@ func _basis_materialien() -> void:
 	m["leder"] = _tex("foyer_brown_leather", 1.2)
 	m["stahl"] = _tex("kantine_stahl", 1.2, Color(1.2, 1.2, 1.25), 0.3, 0.45)
 	m["teppich"] = _tex("buero_teppich", 2.0)
+	m["saeule"] = _tex("brushed_concrete_04", 2.0, Color(0.95, 0.93, 0.88), 0.0, 1.0, false)
 	m["chrom"] = _std(Color(0.7, 0.72, 0.76), 0.0, 0.8, 0.3)
 	m["dunkel"] = _std(Color(0.1, 0.11, 0.14), 0.0, 0.3, 0.5)
 	m["weiss"] = _std(Color(0.93, 0.94, 0.96), 0.0, 0.05, 0.45)
@@ -316,9 +321,9 @@ func _rohbau(b: float, t: float, anzahl: int, hoehe: float, tuer_x := 0.0, tuer_
 	# Aussenwaende je Etage
 	for e in etagen:
 		var y0 := boden_y(e)
-		_wand(Vector2(-b * 0.5, -t * 0.5 + WAND * 0.5), Vector2(b * 0.5, -t * 0.5 + WAND * 0.5), y0, Vector3(0, 0, -1), true)
-		_wand(Vector2(-b * 0.5 + WAND * 0.5, -t * 0.5 + WAND), Vector2(-b * 0.5 + WAND * 0.5, t * 0.5 - WAND), y0, Vector3(-1, 0, 0), true)
-		_wand(Vector2(b * 0.5 - WAND * 0.5, -t * 0.5 + WAND), Vector2(b * 0.5 - WAND * 0.5, t * 0.5 - WAND), y0, Vector3(1, 0, 0), true)
+		_wand(Vector2(-b * 0.5, -t * 0.5 + WAND * 0.5), Vector2(b * 0.5, -t * 0.5 + WAND * 0.5), y0, Vector3(0, 0, -1), fenster_hinten)
+		_wand(Vector2(-b * 0.5 + WAND * 0.5, -t * 0.5 + WAND), Vector2(-b * 0.5 + WAND * 0.5, t * 0.5 - WAND), y0, Vector3(-1, 0, 0), fenster_seiten)
+		_wand(Vector2(b * 0.5 - WAND * 0.5, -t * 0.5 + WAND), Vector2(b * 0.5 - WAND * 0.5, t * 0.5 - WAND), y0, Vector3(1, 0, 0), fenster_seiten)
 		var zf := t * 0.5 - WAND * 0.5
 		if e == 0:
 			_wand(Vector2(-b * 0.5, zf), Vector2(tuer_x - tuer_b * 0.5, zf), y0, Vector3(0, 0, 1), true)
@@ -662,6 +667,7 @@ func _bild(pos: Vector3, g: Vector2, dreh: float, ordner: String, emission := 0.
 
 ## Schild: dunkle Platte mit Schrift. `dreh`: 0 = lesbar von +z.
 func _schild(txt: String, pos: Vector3, dreh: float, pixel := 0.006, farbe := Color(0.85, 0.95, 1.0), leuchtet := true) -> void:
+	pixel *= SCHILD_MASS
 	var n := _gruppe(pos, dreh)
 	var l := _text(txt, Vector3(0, 0, 0.035), farbe, pixel, 0.0, leuchtet, n)
 	var zeilen := txt.count("\n") + 1
@@ -682,3 +688,49 @@ func _theke(pos: Vector3, g: Vector3, dreh: float, korpus: Material, platte: Mat
 	n.add_child(k)
 	_kol(k, g)
 	return n
+
+
+## Ring (Torus), liegt flach in der xz-Ebene.
+func _ring(pos: Vector3, innen: float, aussen: float, mat: Material, eltern: Node3D = null) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = innen
+	tm.outer_radius = aussen
+	tm.rings = 24
+	tm.ring_segments = 10
+	mi.mesh = tm
+	mi.material_override = mat
+	mi.position = pos
+	(eltern if eltern != null else self).add_child(mi)
+	return mi
+
+
+## Portikus vor der Front: `anzahl` Saeulen tragen ein Vordach in Hoehe `h`, Mitte bei x.
+func _portikus(x: float, b: float, h: float, vor: float, anzahl: int, saeule: Material) -> void:
+	var zf := tiefe * 0.5
+	_box(Vector3(x, h + 0.2, zf + vor * 0.5), Vector3(b, 0.4, vor), m["fassade"], false)
+	_box(Vector3(x, h - 0.04, zf + vor - 0.1), Vector3(b, 0.08, 0.08), m["akzent"], false)
+	for i in anzahl:
+		var sx := x - b * 0.5 + 0.5 + (b - 1.0) * i / float(anzahl - 1)
+		_zyl(Vector3(sx, h * 0.5, zf + vor - 0.5), 0.32, h, saeule, null, -1.0, 16, true)
+		_box(Vector3(sx, 0.1, zf + vor - 0.5), Vector3(0.9, 0.2, 0.9), saeule, false)
+
+
+## Schriftzug an der Fassade ueber dem Eingang (leuchtet), optional mit Unterzeile.
+func _fassaden_schrift(titel: String, unter: String, y: float, farbe: Color, pixel := 0.03, x := 0.0) -> void:
+	var zf := tiefe * 0.5 + HAUT + 0.05
+	_text(titel, Vector3(x, y, zf), farbe, pixel, 0.0, true)
+	if unter != "":
+		_text(unter, Vector3(x, y - pixel * 62.0, zf), Color(0.6, 0.95, 1.0), pixel * 0.32, 0.0, true)
+
+
+## Fahnenmast mit Fahne.
+func _fahne(pos: Vector3, farbe: Color, h := 7.0) -> void:
+	_zyl(pos + Vector3(0, h * 0.5, 0), 0.06, h, m["chrom"], null, -1.0, 8, true)
+	_box(pos + Vector3(0.75, h - 0.6, 0), Vector3(1.4, 0.9, 0.03), _std(farbe, 0.0, 0.0, 0.8, false), false)
+
+
+## Leuchtbaender an den Geschosskanten der Front (Cyber-Akzent).
+func _leuchtbaender() -> void:
+	for e in range(1, etagen + 1):
+		_box(Vector3(0, boden_y(e) - 0.1, tiefe * 0.5 + HAUT + 0.03), Vector3(breite, 0.08, 0.06), m["akzent"], false)

@@ -12,6 +12,10 @@ const BURGER_POS := Vector2(107, 83)
 ## Wassertank-Hochhaus: steht noerdlich der Runenstrasse (frueher z -100, das ragte auf die Fahrbahn)
 const TANK_POS := Vector2(240, -126)
 const POPCORN_POS := Vector2(255, 40)
+## Oeffentliche Gebaeude (begehbar, levels/haus.gd): [Skript, Mitte, Drehung, Sperrflaeche]
+const BUECHEREI_POS := Vector2(-33, -40)   ## Front nach Osten zur Zauber-Allee
+const MUSEUM_POS := Vector2(-38, -185)     ## Front nach Norden zur Tower-Allee
+const RATHAUS_POS := Vector2(42, 0)        ## Front nach Westen zur Zauber-Allee, mit Vorplatz
 const TANK_RADIUS := 13.0
 const TANK_STUETZE_H := 8.0
 const TANK_STUETZE_ABSTAND := 8.0   ## Stuetzen stehen bei +-8 m (Diagonale 11,3 m, innerhalb des Tankradius)
@@ -149,6 +153,7 @@ func _ready() -> void:
 	_popcorn()
 	_burger()
 	_neonmarkt()
+	_oeffentliche_gebaeude()
 	_gurkenfeld()
 	_floronia()
 	_viertel_bauen()
@@ -449,6 +454,9 @@ func _sperrzonen() -> void:
 	rechtecke = [
 		Rect2(-170, -65, 120, 110),   # Waldviertel
 		Rect2(-318, -312, 135, 212),  # Gurken-Wald
+		Rect2(-47, -59, 28, 38),      # Buecherei
+		Rect2(-59, -198, 42, 26),     # Museum
+		Rect2(14, -21, 44, 42),       # Stadtverwaltung mit Vorplatz
 	]
 	linien = [
 		[_fluss_ost(), FLUSS_SPERRE],
@@ -1513,6 +1521,13 @@ func _wassertank() -> void:
 func _popcorn() -> void:
 	# Popcorn-Labor (levels/popcorn_labor.gd): begehbar, Eingang zeigt zum Popcornstich (nach Westen)
 	_haus("res://levels/popcorn_labor.gd", POPCORN_POS, -90.0)
+
+
+## Oeffentliche Gebaeude auf den frueheren Freiflaechen: Buecherei, Museum, Stadtverwaltung.
+func _oeffentliche_gebaeude() -> void:
+	_haus("res://levels/buecherei.gd", BUECHEREI_POS, 90.0)
+	_haus("res://levels/museum.gd", MUSEUM_POS, 180.0)
+	_haus("res://levels/rathaus.gd", RATHAUS_POS, -90.0)
 
 
 ## Setzt ein begehbares Haus (Unterklasse von levels/haus.gd). `dreh`: Grad um y; die Front zeigt
