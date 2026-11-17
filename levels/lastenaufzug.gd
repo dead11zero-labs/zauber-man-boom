@@ -21,7 +21,8 @@ signal fahrt_gestartet(nach_oben: bool)
 const VERWEIL := 0.7                    ## Sekunden auf der Plattform bis zur Abfahrt
 const PLATTE_DICKE := 0.3
 const STEH_HOEHE := 2.2                 ## so hoch ueber der Plattform zaehlt der Spieler als "drauf"
-const RUF_ABSTAND := 4.5                ## waagerecht, ab Schachtmitte: so nah ruft der Spieler die Plattform
+const RUF_ABSTAND := 6.0                ## waagerecht, ab Schachtmitte: so nah ruft der Spieler die Plattform
+const KOPF_HOEHE := 2.1                 ## Spielerhoehe plus Luft: darunter haelt die Plattform an (kein Zerquetschen)
 const RUF_HOEHE := 2.5
 const WAND_DICKE := 0.4
 const TUER_HOEHE := 3.0
@@ -159,6 +160,13 @@ func _auf_plattform(p: Vector3) -> bool:
 	return p.x > 0.0 and p.x < groesse.x and p.z > 0.0 and p.z < groesse.y and p.y > y - 0.3 and p.y < y + STEH_HOEHE
 
 
+## Steht der Spieler im Schacht direkt unter der Plattform (Kopf beruehrt gleich die Unterseite)?
+func _unter_plattform(p: Vector3) -> bool:
+	var unterseite := _platte.position.y - PLATTE_DICKE
+	return p.x > -0.3 and p.x < groesse.x + 0.3 and p.z > -0.3 and p.z < groesse.y + 0.3 \
+		and p.y < unterseite and p.y + KOPF_HOEHE > unterseite - 0.1
+
+
 func _wartet_an(p: Vector3, halt_y: float) -> bool:
 	var mitte := Vector2(groesse.x * 0.5, groesse.y * 0.5)
 	return Vector2(p.x, p.z).distance_to(mitte) < RUF_ABSTAND and absf(p.y - halt_y) < RUF_HOEHE
@@ -190,6 +198,8 @@ func _physics_process(delta: float) -> void:
 			if _platte.position.y >= oben_y:
 				_ankommen(Zustand.OBEN)
 		Zustand.FAEHRT_RUNTER:
+			if sp != null and _unter_plattform(sp):
+				return
 			_platte.position.y = maxf(_platte.position.y - tempo * delta, unten_y)
 			if _platte.position.y <= unten_y:
 				_ankommen(Zustand.UNTEN)

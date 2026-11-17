@@ -7,6 +7,8 @@ extends Node3D
 ## an der Ostwand die exotischen Gewuerze (mit ausgebranntem Chili-Platz), vorn rechts Kassenzone mit 5 Kassen,
 ## 2 Selbstscan-Kassen und der Ausgang. Aussen: Neonreklame, Vorplatz mit Wagenbox, Lieferdrohnen-Deck auf dem Dach,
 ## Hoverboard-Drive-In. Automatiktueren oeffnen, sobald der Spieler naht.
+## Dach: Dachaufzug an der Westwand (levels/lastenaufzug.gd, Luecke in der Attika). An der geparkten Lieferdrohne
+## startet die Taste "interagieren" den Drohnen-Lieferdienst (levels/drohnen_lieferung.gd).
 ## Texturen: Poly Haven (assets/texturen/markt_*) und selbst erzeugte Produktreihen (assets/texturen/markt_prod_*).
 ## Schriften nur auf festen Schildern (keine frei schwebenden Texte). Keine Signale, keine Exporte.
 ## Wird von stadt.gd (_neonmarkt) erzeugt. Alle Masse in Metern.
@@ -42,6 +44,16 @@ const FELD_X1 := -10.0
 const FELD_Z0 := -4.0
 const FELD_Z1 := 9.0
 const FELD_H := 3.2
+## Dachaufzug: NW-Ecke des Schachts (lokal), Grundflaeche wie beim Lastenaufzug im 6twelve
+const DACHLIFT := preload("res://levels/lastenaufzug.gd")
+const DACHLIFT_POS := Vector3(-30.6, 0.0, -10.1)
+const DACHLIFT_GROESSE := Vector2(2.15, 4.2)
+const LIEFERSPIEL := preload("res://levels/drohnen_lieferung.gd")
+const DECK := Vector3(-18.0, H + 0.45, -8.0)     ## erster Landeplatz des Lieferdrohnen-Decks
+const PARK_VERSATZ := Vector3(6.0, 0.5, 0.0)     ## geparkte Drohne ueber dem mittleren Landeplatz
+const START_REICHWEITE := 3.5
+const START_HINWEIS_HOEHE := 2.2
+const START_HINWEIS_PIXEL := 0.008
 
 var m: Dictionary = {}
 var zeit := 0.0
@@ -52,6 +64,8 @@ var _drohnen: Array[Node3D] = []
 var _rotoren: Array[Node3D] = []
 var _bretter: Array[Node3D] = []
 var _prod_cache: Dictionary = {}
+var _park_drohne: Node3D
+var _start_hinweis: Label3D
 
 
 func _ready() -> void:
@@ -67,6 +81,7 @@ func _ready() -> void:
 	_kassenzone()
 	_drohnen_bauen()
 	_aussen()
+	_dach_zugang()
 
 
 func _process(delta: float) -> void:
@@ -83,6 +98,14 @@ func _process(delta: float) -> void:
 		r.rotation.y += delta * ROTOR_TEMPO
 	for i in _bretter.size():
 		_bretter[i].position.y = 0.9 + sin(zeit * 1.6 + i) * 0.08
+	if _start_hinweis != null:
+		_start_hinweis.visible = _start_moeglich()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("interagieren") and not event.is_echo() and _start_moeglich():
+		get_viewport().set_input_as_handled()
+		_lieferspiel_starten()
 
 
 # ---------------------------------------------------------------- Helfer
@@ -331,7 +354,14 @@ func _huelle() -> void:
 	_box(Vector3(0, H + 0.2, 0), Vector3(B, 0.4, T), m["dunkel"])
 	for s in [-1.0, 1.0]:
 		_box(Vector3(0, H + 0.7, s * (hz - 0.15)), Vector3(B, 0.6, 0.3), m["fassade"])
-		_box(Vector3(s * (hx - 0.15), H + 0.7, 0), Vector3(0.3, 0.6, T), m["fassade"])
+		if s > 0.0:
+			_box(Vector3(s * (hx - 0.15), H + 0.7, 0), Vector3(0.3, 0.6, T), m["fassade"])
+		else:
+			# Westseite: Luecke fuer den Dachaufzug
+			var z0 := DACHLIFT_POS.z
+			var z1 := DACHLIFT_POS.z + DACHLIFT_GROESSE.y
+			_box(Vector3(-(hx - 0.15), H + 0.7, (-hz + z0) * 0.5), Vector3(0.3, 0.6, z0 + hz), m["fassade"])
+			_box(Vector3(-(hx - 0.15), H + 0.7, (z1 + hz) * 0.5), Vector3(0.3, 0.6, hz - z1), m["fassade"])
 	# Innenverkleidung (Putz) Rueck- und Seitenwaende, Sockelleiste
 	_box(Vector3(0, DECKE_Y * 0.5, -hz + WAND + 0.05), Vector3(B - 1.0, DECKE_Y, 0.1), m["wand"], false)
 	for s in [-1.0, 1.0]:
@@ -822,13 +852,13 @@ func _drohnen_bauen() -> void:
 	for i in DROHNEN_ANZAHL:
 		_drohnen.append(_drohne(Vector3(0, DROHNEN_HOEHE, 0)))
 	# Lieferdrohnen-Deck auf dem Dach: drei Landeplaetze, eine geparkte Drohne
-	var deck := Vector3(-18.0, H + 0.45, -8.0)
+	var deck := DECK
 	for i in 3:
 		var p := deck + Vector3(i * 6.0, 0.0, 0)
 		_zyl(p, 2.2, 0.06, m["dunkel"], false)
 		_zyl(p + Vector3(0, 0.04, 0), 2.0, 0.04, m["cyan"], false, null, 24)
 		_zyl(p + Vector3(0, 0.07, 0), 1.7, 0.04, m["dunkel"], false, null, 24)
-	_drohne(deck + Vector3(6.0, 0.5, 0), true)
+	_park_drohne = _drohne(deck + PARK_VERSATZ, true)
 	# Dachtechnik: Klimageraete und Antenne mit Warnleuchte
 	for i in 4:
 		_box(Vector3(14.0 + i * 3.4, H + 1.0, -10.0), Vector3(2.6, 1.2, 2.2), m["fassade"], false)
@@ -876,3 +906,51 @@ func _aussen() -> void:
 		_box(Vector3(0, -0.07, 0), Vector3(1.3, 0.03, 0.4), m["cyan"], false, b)
 		_bretter.append(b)
 	_licht(Vector3(dx, 3.0, 6.0), CYAN, 1.5, 12.0)
+
+
+# ---------------------------------------------------------------- Dach: Aufzug und Lieferdienst
+
+func _dach_zugang() -> void:
+	var lift := Node3D.new()
+	lift.name = "Dachaufzug"
+	lift.set_script(DACHLIFT)
+	lift.set("oben_y", H + 0.4)
+	lift.set("unten_y", 0.0)
+	lift.set("groesse", DACHLIFT_GROESSE)
+	lift.position = DACHLIFT_POS
+	add_child(lift)
+	lift.call("freigeben")
+	_schrift("DACH // LIEFERDECK", Vector3(DACHLIFT_POS.x - 0.45, 3.6, DACHLIFT_POS.z + DACHLIFT_GROESSE.y * 0.5), CYAN, 40, 0.008, -90.0)
+	_start_hinweis = Label3D.new()
+	_start_hinweis.font_size = 48
+	_start_hinweis.pixel_size = START_HINWEIS_PIXEL
+	_start_hinweis.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_start_hinweis.shaded = false
+	_start_hinweis.no_depth_test = true
+	_start_hinweis.modulate = Color(1.0, 0.85, 0.3)
+	_start_hinweis.outline_modulate = Color(0.0, 0.02, 0.06)
+	_start_hinweis.outline_size = 10
+	_start_hinweis.visible = false
+	_start_hinweis.position = DECK + PARK_VERSATZ + Vector3(0, START_HINWEIS_HOEHE, 0)
+	add_child(_start_hinweis)
+	Eingabe.hinweis_binden(_start_hinweis, "interagieren", "%s: LIEFERDROHNE STEUERN")
+
+
+func _start_moeglich() -> bool:
+	if _park_drohne == null or not _park_drohne.visible or Dialog.aktiv:
+		return false
+	if _spieler == null or not is_instance_valid(_spieler):
+		_spieler = get_tree().get_first_node_in_group("spieler") as Node3D
+		return false
+	var d := to_local(_spieler.global_position) - _park_drohne.position
+	return Vector2(d.x, d.z).length() < START_REICHWEITE and absf(d.y) < START_HINWEIS_HOEHE
+
+
+func _lieferspiel_starten() -> void:
+	var spiel := Node3D.new()
+	spiel.set_script(LIEFERSPIEL)
+	spiel.set("start_pos", to_global(_park_drohne.position))
+	spiel.set("deck_pos", to_global(DECK + PARK_VERSATZ - Vector3(0, 0.5, 0)))
+	_park_drohne.visible = false
+	spiel.connect("beendet", func(_l: int, _p: int) -> void: _park_drohne.visible = true)
+	get_tree().current_scene.add_child(spiel)

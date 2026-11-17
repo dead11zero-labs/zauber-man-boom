@@ -83,3 +83,5 @@ Entschieden (2026-11-07): Iggy hat das Grimoire zerrissen, weil Magie-Strom sein
 77. Der Laden hat kein Warensortiment zum Kaufen und keinen Verkaeufer-NPC. Gewuenscht?
 78. Drohnenwerk: weiter nur Kulisse. Ideen: Drohnen aus dem Werk als Gegner-Quelle (Spaeh- und Rammdrohnen stammen von hier), Sabotage-Quest (Baender per Blitz abschalten), Boss im Hangar. Was davon?
 79. Ladegestelle, Haengebahn und Kaefig-Drohnen sind reine Optik ohne eigene Kollision (ausser Gestellboeden und Netz). Soll man auf die Gestelle klettern koennen?
+80. Drohnen-Lieferdienst: Bestwert nur fuer die laufende Sitzung. Soll er ins Spielstand-System (GameState kennt bisher nur Flags, keine Zahlen)?
+81. Lieferdienst-Steuerung: Steigen liegt auf Sprung und Zauber, Sinken auf Dash. Passt das, oder lieber Maus-Neigung/zweiter Stick fuer die Hoehe?
