@@ -6,3 +6,5 @@
 | Modular SciFi MegaKit | Quaternius | CC0 | `imported_models/megakit/` | Untergrund / Drohnenwerk |
 
 Die Namensnennung fuer CC-BY-Assets muss auch im fertigen Spiel (Abspann oder Credits-Menue) erscheinen.
+| TerraBrush 0.15.0-beta | spimort | MIT | `addons/terrabrush/` (nur Linux-, Windows- und Android-Bibliotheken) | Stadtrand-Guertel (`levels/stadtrand.gd`) |
+| Cogito 1.2.0 (nur Ideen, kein Code) | Philip Drobar und Mitwirkende | MIT | nicht im Projekt | Vorbild fuer Ego-Viewmodel, Wasserzonen und NPC-Bewegung |

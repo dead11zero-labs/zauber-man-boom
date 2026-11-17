@@ -2,6 +2,7 @@ extends Node3D
 ## Wald auf dem Terrain3D-Gelaende: Fichten und Laubbaeume als zwei MultiMeshes.
 ## Standort und Dichte kommen aus TerrainForm (gleiche Formel wie beim Backen des Terrains).
 
+const STADTRAND := preload("res://levels/stadtrand.gd")
 const RASTER := 8.0
 const AUSSEN := 900.0
 const MAX_NEIGUNG := 0.55
@@ -105,6 +106,9 @@ func _baum_mat(ordner: String, kachel: float, hell: float) -> StandardMaterial3D
 
 
 func _hoehe(x: float, z: float) -> float:
+	# Im Stadtrand-Guertel (TerraBrush) gilt dessen Hoehe, Terrain3D ist dort ausgestanzt
+	if STADTRAND.im_guertel(x, z):
+		return STADTRAND.hoehe(x, z)
 	if terrain != null:
 		var d = terrain.get_data()
 		if d != null:

@@ -91,3 +91,5 @@ Entschieden (2026-11-07): Iggy hat das Grimoire zerrissen, weil Magie-Strom sein
 85. Metro: Weitere Stationen (z. B. Runen-Plaza, Hafen) waeren mit `levels/metro_station.gd` machbar, die Strecke ist aber bisher ein gerader Pendeltunnel. Gewuenscht?
 86. Schwimmen: Bisher ist nur der Parkteich tief. Sollen auch die Fluesse tiefer werden (Loecher in Sohle und Gelaende entlang der ganzen Flusslaeufe)?
 87. Unterwasser: keine Luftanzeige, unbegrenzt tauchen. Gewuenscht (z. B. Luft-Balken, danach Herzverlust)?
+88. Stadtrand: Zwei Gelaendesysteme laufen parallel (TerraBrush-Guertel, Terrain3D aussen). Soll TerraBrush spaeter ganz uebernehmen, oder bleibt es beim Guertel?
+89. Wiese/Pflaster innerhalb der Stadt (Park, Gurken-Wald) hat weiter harte Kasten-Kanten. Sollen die Rasenflaechen ausgefranste Raender bekommen (eigener Shader statt TerraBrush)?

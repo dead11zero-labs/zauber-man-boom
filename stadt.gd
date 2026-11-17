@@ -84,6 +84,7 @@ const RAMPEN: Array = [[0, 3, 1.0], [0, 5, -1.0], [1, 3, -1.0], [1, 5, 1.0]]
 const PLATTE := 700.0            ## Kantenlaenge der Stadtplatte
 const METRO := preload("res://levels/metro.gd")
 const PARK := preload("res://park.gd")
+const STADTRAND := preload("res://levels/stadtrand.gd")
 const MARKT_POS := Vector2(-100, 92)   ## Mitte des Neon-Markts 24/7 (Front nach Sueden)
 
 var rng := RandomNumberGenerator.new()
@@ -181,6 +182,7 @@ func _ready() -> void:
 	_oeffentliche_gebaeude()
 	_laden_und_abgang()
 	_metro()
+	_stadtrand()
 	_strassen_deko()
 	_niko_kulisse()
 	_gurkenfeld()
@@ -1701,6 +1703,16 @@ func _terrain_loch() -> void:
 					daten.set_control_hole(Vector3(lx, 0.0, lz), true)
 				lz += t.vertex_spacing
 			lx += t.vertex_spacing
+	# Stadtrand-Guertel (TerraBrush) ersetzt Terrain3D zwischen LOCH_INNEN und LOCH_AUSSEN
+	var g := STADTRAND.LOCH_AUSSEN
+	var gx := -g
+	while gx <= g:
+		var gz := -g
+		while gz <= g:
+			if STADTRAND.ist_terrain3d_loch(gx, gz):
+				daten.set_control_hole(Vector3(gx, 0.0, gz), true)
+			gz += t.vertex_spacing
+		gx += t.vertex_spacing
 	daten.update_maps(Terrain3DRegion.TYPE_CONTROL, true, false)
 	# Kollision neu aufbauen (Modus FULL_GAME baut sie sonst nur einmal beim Start)
 	var kol = t.get("collision")
@@ -1715,6 +1727,15 @@ func _haus_skript(skript: String, pos: Vector3, dreh: float) -> Node3D:
 	n.rotation_degrees.y = dreh
 	add_child(n)
 	return n
+
+
+## Natuerlicher Stadtrand: TerraBrush-Guertel um die Platte (levels/stadtrand.gd)
+func _stadtrand() -> void:
+	if get_node_or_null("../Terrain") == null:
+		return
+	var r := Node3D.new()
+	r.set_script(STADTRAND)
+	add_child(r)
 
 
 ## U-Bahn-Linie M1 zwischen Synth-City und Neo-Distrikt (levels/metro.gd)
