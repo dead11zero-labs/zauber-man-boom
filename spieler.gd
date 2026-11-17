@@ -42,6 +42,10 @@ const RESPAWN_HOEHE := 0.3
 ## Heilung: jeder eingesammelte Mana-Kern gibt so viele Herzen zurueck
 const HEILUNG_PRO_KERN := 1
 const BLITZ_SKRIPT := preload("res://blitz.gd")
+## Ego-Perspektive (Aktion "perspektive"): Kamera auf Augenhoehe, Koerper aus, rechter Arm als Viewmodel
+const EGO_ARM := preload("res://characters/ego_arm.gd")
+const EGO_AUGENHOEHE := 1.65
+const EGO_BLITZ_VERSATZ := Vector3(0.22, -0.18, -0.9)   ## Blitzstart vor der Hand (Kameraraum)
 
 signal kristalle_geaendert(anzahl: int, gesamt: int)
 ## Ladeanteil 0..1 waehrend die Zaubertaste gehalten wird (HUD-Balken)
@@ -72,6 +76,10 @@ var _start_pos := Vector3.ZERO
 var _sperren: Dictionary = {}
 ## Kamera steckt dicht an der Figur (Wand im Ruecken): Modell ausblenden, sonst schaut man hinein
 var _kamera_nah := false
+var _ego := false
+var _ego_arm: Node3D
+var _arm_pos_dritte := Vector3.ZERO
+var _arm_laenge_dritte := 3.2
 
 @onready var hand: Marker3D = $Hand
 @onready var modell_lauf: Node3D = $Modell/Laufen
@@ -93,6 +101,12 @@ func _ready():
 	EventBus.upgrade_gekauft.connect(func(_i: String, _s: int) -> void: kristalle = GameState.mana_kerne; kristalle_geaendert.emit(kristalle, kristalle_gesamt))
 	EventBus.mana_kern_gesammelt.connect(func(_n: int) -> void: GameState.heilen(HEILUNG_PRO_KERN))
 	_nick_standard = kamera_arm.rotation.x
+	_arm_pos_dritte = kamera_arm.position
+	_arm_laenge_dritte = kamera_arm.get("laenge")
+	_ego_arm = Node3D.new()
+	_ego_arm.set_script(EGO_ARM)
+	_ego_arm.visible = false
+	kamera_arm.get_node("Kamera").add_child(_ego_arm)
 	kamera_arm.connect("naehe_geaendert", func(nah: bool) -> void: _kamera_nah = nah)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Eingabe.ist_touch() else Input.MOUSE_MODE_CAPTURED
 	Eingabe.geraet_geaendert.connect(_geraet_geaendert)
@@ -210,8 +224,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Der Klick zum Einfangen der Maus loest keinen Blitz aus
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		_zauber_timer = ZAUBER_PAUSE
+	elif event.is_action_pressed("perspektive") and not ist_gesperrt():
+		ego_setzen(not _ego)
 	elif event.is_action_pressed("ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+## Wechselt zwischen Schulterkamera und Ego-Sicht.
+func ego_setzen(an: bool) -> void:
+	_ego = an
+	kamera_arm.set("laenge", 0.0 if an else _arm_laenge_dritte)
+	kamera_arm.set("abstand", 0.0 if an else _arm_laenge_dritte)
+	kamera_arm.position = Vector3(0.0, EGO_AUGENHOEHE, 0.0) if an else _arm_pos_dritte
+	kamera_arm.rotation.x = 0.0 if an else _nick_standard
+	_ego_arm.visible = an
+
+func ist_ego() -> bool:
+	return _ego
 
 func _sprung_starten(ab_zeit: float) -> void:
 	_sprung_aktiv = true
@@ -222,7 +250,7 @@ func _physics_process(delta):
 	_schutz = maxf(_schutz - delta, 0.0)
 	_unverwundbar = maxf(_unverwundbar - delta, 0.0)
 	_dash_pause = maxf(_dash_pause - delta, 0.0)
-	$Modell.visible = not _tot and not _kamera_nah and (_unverwundbar <= 0.0 or fmod(_unverwundbar * BLINK_TEMPO, 1.0) < 0.5)
+	$Modell.visible = not _tot and not _kamera_nah and not _ego and (_unverwundbar <= 0.0 or fmod(_unverwundbar * BLINK_TEMPO, 1.0) < 0.5)
 	if _tot:
 		velocity = Vector3.ZERO
 		return
@@ -287,6 +315,8 @@ func _physics_process(delta):
 	modell_lauf.visible = laeuft and not _sprung_aktiv
 	modell_stehen.visible = not laeuft and not _sprung_aktiv
 	anim.speed_scale = signf(vorwaerts) * maxf(absf(vorwaerts), 0.4) if laeuft else 1.0
+	if _ego:
+		_ego_arm.call("wippen_setzen", absf(vorwaerts) if is_on_floor() else 0.0)
 
 	_zauber_timer -= delta
 	var maus_schuss := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
@@ -308,6 +338,8 @@ func _physics_process(delta):
 		_blitz_schiessen(anteil)
 
 func _lade_licht_setzen(anteil: float) -> void:
+	if _ego_arm != null:
+		_ego_arm.call("ladung_setzen", anteil)
 	if anteil <= 0.0:
 		if _lade_licht != null:
 			_lade_licht.visible = false
@@ -343,9 +375,15 @@ func _blitz_schiessen(ladung := 0.0):
 	blitz.schuetze = self
 	blitz.ladung = ladung
 	get_parent().add_child(blitz)
-	blitz.global_transform = hand.global_transform
-	# Blitz folgt dem Blick nach oben/unten (Standard-Kamerawinkel = waagerecht)
-	blitz.rotate_object_local(Vector3.RIGHT, kamera_arm.rotation.x - _nick_standard)
+	if _ego:
+		# Ego-Sicht: aus der rechten Hand, genau in Blickrichtung der Kamera
+		var kam: Camera3D = kamera_arm.get_node("Kamera")
+		blitz.global_transform = kam.global_transform.translated_local(EGO_BLITZ_VERSATZ)
+		_ego_arm.call("zaubern")
+	else:
+		blitz.global_transform = hand.global_transform
+		# Blitz folgt dem Blick nach oben/unten (Standard-Kamerawinkel = waagerecht)
+		blitz.rotate_object_local(Vector3.RIGHT, kamera_arm.rotation.x - _nick_standard)
 	# Zielhilfe: Blitz leicht auf ein Ziel im Kegel ausrichten
 	var reichweite := ZIEL_REICHWEITE_LADUNG if ladung >= 1.0 else ZIEL_REICHWEITE
 	reichweite *= 1.0 + GameState.upgrade_bonus("blitzreichweite")

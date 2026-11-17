@@ -47,6 +47,7 @@ const TASTEN := {
 	"hinweis": ["H", "LB", "HINWEIS"],
 	"journal": ["J", "START", "JOURNAL"],
 	"minimap": ["M", "BACK", "KARTE"],
+	"perspektive": ["V", "L3", "SICHT"],
 	"ui_cancel": ["ESC", "B", "ZURÜCK"],
 	"ui_accept": ["ENTER", "A", "OK"],
 }
@@ -59,7 +60,7 @@ const PAD_TASTEN := {
 	},
 	PadFamilie.PLAYSTATION: {
 		"interagieren": "DREIECK", "springen": "KREUZ", "zaubern": "QUADRAT", "dash": "KREIS", "hinweis": "L1",
-		"journal": "OPTIONS", "minimap": "SHARE", "ui_cancel": "KREIS", "ui_accept": "KREUZ",
+		"journal": "OPTIONS", "minimap": "SHARE", "ui_cancel": "KREIS", "ui_accept": "KREUZ", "perspektive": "L3",
 	},
 }
 ## Namensteile (klein geschrieben), an denen die Pad-Familie erkannt wird
@@ -93,6 +94,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_zusatz_aktion("minimap", [KEY_M], JOY_BUTTON_BACK)
 	_zusatz_aktion("tageszeit", [KEY_T], JOY_BUTTON_RIGHT_STICK)
+	_zusatz_aktion("perspektive", [KEY_V], JOY_BUTTON_LEFT_STICK)   # Ego-Sicht an/aus
 	# Neue Aktion "hinweis": Taste H, Pad linke Schulter (Hinweis-Pulse an Raetseln)
 	if not InputMap.has_action("hinweis"):
 		InputMap.add_action("hinweis")
