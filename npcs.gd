@@ -20,3 +20,4 @@ func _ready() -> void:
 		var b = buerger_szene.instantiate()
 		b.name = "Buerger%d" % (i + 1)
 		add_child(b)
+
