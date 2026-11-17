@@ -151,3 +151,6 @@ Weitere Meilensteine: siehe `docs/KONZEPT.md`, Abschnitt 10.
 - [x] Lage: `LADEN_POS` 250/211, die Parkplatzkante liegt am Gehweg des Schattenkais, Asphalt-Zufahrt ueber die ganze Parkplatzbreite. Abgang und Komplex wandern automatisch mit.
 - [x] `stadt.gd: _terrain_loch`: Gelaende unter dem ganzen Komplex auf -40 abgesenkt, Kollision neu gebaut. Loch in der Platte ueber beiden Treppenspuren.
   Test im komplett geladenen Spiel (Kapsel mit den Massen des Spielers, Radius 0,5, Hoehe 1,9): Strasse, Eingang, hinter die Theke, Lagertuer, Luke (Hinweis sichtbar), Schacht, Lobby, Halle; Gegenprobe von aussen gegen die Hofmauer bleibt haengen. Screenshots aussen und an der offenen Luke. Nicht getestet: echter Tastendruck E mit dem Spieler, Kamera im engen Schacht, Kopffreiheit beim Springen (10 cm Luft am ersten Podest).
+
+## Sy-Ci Burgers, 6twelve-Zugang, Drohnenfabrik, Liefer-Minispiel (2026-11-17)
+- [x] Sy-Ci Burgers: Die "Rutsche" aus dem Screenshot war gar nicht Teil des Ladens, sondern die Aero-Ring-Auffahrt bei 30 Grad (`stadt.gd`, 12 x 101 m, mit Kollision), die schraeg durch das Restaurant lief. Sie ist entfernt (`RING_AUFFAHRTEN`), ihr Streifen bleibt als Linie reserviert. Drei Auffahrten bleiben. Per Screenshot und Strahltest im Laden geprueft.

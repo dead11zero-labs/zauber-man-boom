@@ -7,6 +7,11 @@ const RING_M := Vector2(0, 10)
 const RING_RX := 210.0
 const RING_RZ := 170.0
 const RING_H := 14.0
+## Auffahrten zum Aero-Ring (Winkel in Grad). Die Auffahrt bei 30 Grad ist entfernt: sie lief
+## als schwarze Schraege quer durch Sy-Ci Burgers. Ihr Streifen bleibt als Linie reserviert,
+## damit die Stadtverteilung (Gebaeude, Stuetzen) gleich bleibt.
+const RING_AUFFAHRTEN: Array[float] = [150.0, 210.0, 330.0]
+const RING_AUFFAHRTEN_FREI: Array[float] = [30.0]
 const TURM := Vector2(0, -240)
 const BURGER_POS := Vector2(107, 83)
 ## Wassertank-Hochhaus: steht noerdlich der Runenstrasse (frueher z -100, das ragte auf die Fahrbahn)
@@ -927,10 +932,11 @@ func _ring() -> void:
 		if i % 6 == 0 and not _auf_linien(a.x, a.z, 2.0):
 			_zyl(Vector3(a.x, (RING_H - 1.2) / 2.0, a.z), 1.6, RING_H - 1.2, m_ring, true, 12)
 	# Auffahrten
-	for grad in [30.0, 150.0, 210.0, 330.0]:
+	for grad: float in RING_AUFFAHRTEN + RING_AUFFAHRTEN_FREI:
 		var p := _ring_pt(deg_to_rad(grad))
 		var q := Vector3(RING_M.x + (p.x - RING_M.x) * 0.5, 0.1, RING_M.y + (p.z - RING_M.y) * 0.5)
-		_balken(q, p, 12.0, 1.0, m_ring)
+		if grad in RING_AUFFAHRTEN:
+			_balken(q, p, 12.0, 1.0, m_ring)
 		linien.append([PackedVector2Array([Vector2(q.x, q.z), Vector2(p.x, p.z)]), 14.0])
 	# fliegende Autos: drei Meshy-Modelle (auto_truck, auto_flitzer, auto_sportwagen), verschieden eingefaerbt.
 	# Die Modelle schauen entlang -X und sind ca. 1,9 m lang, daher drehen und vergroessern.
