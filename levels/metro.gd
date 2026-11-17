@@ -371,6 +371,7 @@ func _abfahren(sp: Variant) -> void:
 		_versatz = _zug.to_local(sp)
 		EventBus.eingabe_gesperrt.emit(SPERRE_GRUND, true)
 	_zug.call("anzeige_setzen", "M1 · NÄCHSTER HALT: %s" % STATIONEN[_ziel]["name"])
+	_zug.call("ansage_abspielen")
 	fahrt_gestartet.emit(STATIONEN[_ziel]["name"])
 	_wechseln(Zustand.FAHRT)
 

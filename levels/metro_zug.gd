@@ -3,7 +3,8 @@ extends Node3D
 ## Lokale Achsen: Ursprung = Schienenoberkante in Zugmitte, Zug entlang x, Fussboden bei BODEN_Y (= Bahnsteighoehe).
 ## Kollision: ein AnimatableBody3D (Boden, Dach, Seitenwaende, Tueren, Stirnwaende), damit man an der Station
 ## einsteigen und drin herumlaufen kann. Waehrend der Fahrt fuehrt levels/metro.gd den Spieler mit.
-## Methoden: tueren_setzen(seite, offen), innen(punkt), anzeige_setzen(text), static tuer_positionen().
+## Methoden: tueren_setzen(seite, offen), innen(punkt), anzeige_setzen(text), ansage_abspielen(), static tuer_positionen().
+## Zugansage: assets/audio/metro_ansage.mp3 (ElevenLabs-Stimme "Arthur Holm", vom Nutzer geliefert), als 3D-Ton im Zug.
 ## Exportiert: linien_farbe. Keine Signale.
 
 const NEON := preload("res://ui/neon.gd")
@@ -25,6 +26,9 @@ const TUER_ZEIT := 1.1
 const WAND_D := 0.08
 const NASE_L := 1.6
 const UEBERGANG_B := 1.4
+const ANSAGE := "res://assets/audio/metro_ansage.mp3"
+const ANSAGE_LAUTSTAERKE_DB := 2.0
+const ANSAGE_REICHWEITE := 45.0       ## Meter: im Zug und auf dem Bahnsteig gut hoerbar
 
 var _m: Dictionary = {}
 var _koerper: AnimatableBody3D
@@ -32,6 +36,7 @@ var _tueren: Array = []            ## je Tuer: [seite, linkes Blatt, rechtes Bla
 var _offen := {-1: 0.0, 1: 0.0}
 var _soll := {-1: 0.0, 1: 0.0}
 var _anzeigen: Array[Label3D] = []
+var _ansage: AudioStreamPlayer3D
 
 
 func _ready() -> void:
@@ -42,6 +47,14 @@ func _ready() -> void:
 	for i in WAGEN_MITTE.size():
 		_wagen(WAGEN_MITTE[i], i)
 	_uebergang()
+	_ansage = AudioStreamPlayer3D.new()
+	if ResourceLoader.exists(ANSAGE):
+		_ansage.stream = load(ANSAGE)
+	_ansage.volume_db = ANSAGE_LAUTSTAERKE_DB
+	_ansage.max_distance = ANSAGE_REICHWEITE
+	_ansage.unit_size = 12.0
+	_ansage.position = Vector3(0, DACH_Y - 0.4, 0)
+	add_child(_ansage)
 
 
 ## x-Positionen aller Tueren (Zug lokal), fuer die Bahnsteigtueren.
@@ -260,6 +273,11 @@ func innen(p: Vector3) -> bool:
 	var l := to_local(p)
 	var halb := (WAGEN_MITTE[1] - WAGEN_MITTE[0] + WAGEN_L) * 0.5
 	return absf(l.x) < halb and absf(l.z) < BREITE * 0.5 - 0.05 and l.y > BODEN_Y - 0.4 and l.y < DACH_Y
+
+
+func ansage_abspielen() -> void:
+	if _ansage.stream != null:
+		_ansage.play()
 
 
 func anzeige_setzen(text: String) -> void:
