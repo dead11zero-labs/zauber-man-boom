@@ -81,3 +81,5 @@ Entschieden (2026-11-07): Iggy hat das Grimoire zerrissen, weil Magie-Strom sein
 75. Untergrund-Komplex: Er ist nur Kulisse (keine Gegner, keine Quest). Was soll dort passieren? Die Aliens (Chrysalis, Scolitex) stehen als Platzhalter ohne Verhalten.
 76. 6twelve: Lizenz laut Nutzer frei, Modell liegt im Repo (erledigt).
 77. Der Laden hat kein Warensortiment zum Kaufen und keinen Verkaeufer-NPC. Gewuenscht?
+78. Drohnenwerk: weiter nur Kulisse. Ideen: Drohnen aus dem Werk als Gegner-Quelle (Spaeh- und Rammdrohnen stammen von hier), Sabotage-Quest (Baender per Blitz abschalten), Boss im Hangar. Was davon?
+79. Ladegestelle, Haengebahn und Kaefig-Drohnen sind reine Optik ohne eigene Kollision (ausser Gestellboeden und Netz). Soll man auf die Gestelle klettern koennen?
