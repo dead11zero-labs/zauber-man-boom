@@ -85,3 +85,7 @@ Entschieden (2026-11-07): Iggy hat das Grimoire zerrissen, weil Magie-Strom sein
 79. Ladegestelle, Haengebahn und Kaefig-Drohnen sind reine Optik ohne eigene Kollision (ausser Gestellboeden und Netz). Soll man auf die Gestelle klettern koennen?
 80. Drohnen-Lieferdienst: Bestwert nur fuer die laufende Sitzung. Soll er ins Spielstand-System (GameState kennt bisher nur Flags, keine Zahlen)?
 81. Lieferdienst-Steuerung: Steigen liegt auf Sprung und Zauber, Sinken auf Dash. Passt das, oder lieber Maus-Neigung/zweiter Stick fuer die Hoehe?
+82. LIZENZ: `addons/PixelDriftMetro` (die grosse Version, 1095 Dateien) liegt im oeffentlichen Repo, ihre Lizenz verbietet aber die Weitergabe der Assets als Einzeldateien. Soll der Ordner aus dem Repo (in `.gitignore`, lokal behalten)? Die neue Metro nutzt nur die Free-Version (CC BY 4.0).
+83. Metro: Schnellreise laut Konzept ("Fahrzeug-Stationen, nach erstem Besuch freigeschaltet") ist das nicht, man faehrt mit. Reicht das, oder soll es zusaetzlich einen Sofort-Sprung geben?
+84. Metro: Waehrend der Fahrt ist die Eingabe ganz gesperrt (auch Umsehen). Soll man im Zug herumlaufen duerfen?
+85. Metro: Weitere Stationen (z. B. Runen-Plaza, Hafen) waeren mit `levels/metro_station.gd` machbar, die Strecke ist aber bisher ein gerader Pendeltunnel. Gewuenscht?

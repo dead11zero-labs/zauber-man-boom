@@ -82,6 +82,7 @@ const RAMPE_LUECKE := 3.5        ## Gelaender-Luecke am oberen Ende einer Rampe
 ## Rampen zum Wasser: [Fluss (0 Ost, 1 West), Abschnitt der Flusslinie, Uferseite (+1/-1)]
 const RAMPEN: Array = [[0, 3, 1.0], [0, 5, -1.0], [1, 3, -1.0], [1, 5, 1.0]]
 const PLATTE := 700.0            ## Kantenlaenge der Stadtplatte
+const METRO := preload("res://levels/metro.gd")
 const MARKT_POS := Vector2(-100, 92)   ## Mitte des Neon-Markts 24/7 (Front nach Sueden)
 
 var rng := RandomNumberGenerator.new()
@@ -178,6 +179,7 @@ func _ready() -> void:
 	_neonmarkt()
 	_oeffentliche_gebaeude()
 	_laden_und_abgang()
+	_metro()
 	_strassen_deko()
 	_niko_kulisse()
 	_gurkenfeld()
@@ -694,13 +696,14 @@ func _fluss_polygone() -> Array[PackedVector2Array]:
 ## Mit `kollision` bekommt sie einen Dreiecks-Kollisionskoerper.
 func _flaeche(bereich: Rect2, y: float, mat: Material, kollision: bool) -> MeshInstance3D:
 	var teile: Array[PackedVector2Array] = []
-	var loch := _luken_loch()
-	if bereich.encloses(loch) and y == 0.0:
-		# Die Stadtplatte bekommt das Loch fuer die Abgangs-Luke: vier Streifen drumherum statt einer Flaeche
-		for r in _rahmen_streifen(bereich, loch):
-			teile.append(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]))
-	else:
-		teile.append(PackedVector2Array([bereich.position, Vector2(bereich.end.x, bereich.position.y), bereich.end, Vector2(bereich.position.x, bereich.end.y)]))
+	# Die Stadtplatte (y 0) bekommt Loecher fuer die Abgangs-Luke und den Metro-Abgang: Rechteckstreifen drumherum
+	var loecher: Array[Rect2] = []
+	if y == 0.0:
+		for loch in [_luken_loch()] + METRO.plattenloecher():
+			if bereich.encloses(loch):
+				loecher.append(loch)
+	for r in _rechteck_ohne(bereich, loecher):
+		teile.append(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]))
 	for fluss in _fluss_polygone():
 		var rest: Array[PackedVector2Array] = []
 		for t in teile:
@@ -709,6 +712,23 @@ func _flaeche(bereich: Rect2, y: float, mat: Material, kollision: bool) -> MeshI
 					rest.append(stueck)
 		teile = rest
 	return _polygon_mesh(teile, y, mat, kollision)
+
+
+## Rechtecke, die `aussen` ohne alle `loecher` abdecken (jedes Loch zerlegt das Rechteck, in dem es liegt,
+## in vier Streifen). Loecher, die in keinem Teilrechteck ganz liegen, bleiben unberuecksichtigt.
+func _rechteck_ohne(aussen: Rect2, loecher: Array[Rect2]) -> Array[Rect2]:
+	var teile: Array[Rect2] = [aussen]
+	for loch in loecher:
+		var neu: Array[Rect2] = []
+		for t in teile:
+			if t.encloses(loch):
+				for r in _rahmen_streifen(t, loch):
+					if r.size.x > 0.001 and r.size.y > 0.001:
+						neu.append(r)
+			else:
+				neu.append(t)
+		teile = neu
+	return teile
 
 
 ## Vier Rechtecke, die `aussen` ohne `loch` abdecken (Nord, Sued, West, Ost).
@@ -809,7 +829,9 @@ func _fluesse() -> void:
 	var m_gelaender := _std(Color(0.2, 0.22, 0.26), 0.0, 0.85, 0.35)
 	var m_gel_neon := _std(Color(0.2, 0.9, 1.0), 1.6)
 	# Sohle: eine Platte unter der ganzen Stadt, sichtbar nur in den Flusslaeufen (faengt auch alles auf, was faellt)
-	for r in _rahmen_streifen(Rect2(-PLATTE / 2.0, -PLATTE / 2.0, PLATTE, PLATTE), _schacht_loch()):
+	var sohle_loecher: Array[Rect2] = [_schacht_loch()]
+	sohle_loecher.append_array(METRO.sohlenloecher(-FLUSS_TIEFE - 1.0))
+	for r in _rechteck_ohne(Rect2(-PLATTE / 2.0, -PLATTE / 2.0, PLATTE, PLATTE), sohle_loecher):
 		_box(Vector3(r.get_center().x, -FLUSS_TIEFE - 0.5, r.get_center().y), Vector3(r.size.x, 1.0, r.size.y), m_sohle)
 	var linien_f: Array[PackedVector2Array] = [_fluss_ost(), _fluss_west()]
 	var polys := _fluss_polygone()
@@ -1668,6 +1690,17 @@ func _terrain_loch() -> void:
 			z += t.vertex_spacing
 		x += t.vertex_spacing
 	daten.update_maps(Terrain3DRegion.TYPE_HEIGHT, true, false)
+	# Metro-Abgaenge: Gelaende dort als Loch markieren (Flaeche und, nach dem Neuaufbau, auch die Kollision weg)
+	for loch in METRO.terrain_loecher(TerrainForm.UNTER):
+		var lx := snappedf(loch.position.x, t.vertex_spacing)
+		while lx <= loch.end.x:
+			var lz := snappedf(loch.position.y, t.vertex_spacing)
+			while lz <= loch.end.y:
+				if loch.has_point(Vector2(lx, lz)):
+					daten.set_control_hole(Vector3(lx, 0.0, lz), true)
+				lz += t.vertex_spacing
+			lx += t.vertex_spacing
+	daten.update_maps(Terrain3DRegion.TYPE_CONTROL, true, false)
 	# Kollision neu aufbauen (Modus FULL_GAME baut sie sonst nur einmal beim Start)
 	var kol = t.get("collision")
 	if kol != null and kol.has_method("build"):
@@ -1681,6 +1714,13 @@ func _haus_skript(skript: String, pos: Vector3, dreh: float) -> Node3D:
 	n.rotation_degrees.y = dreh
 	add_child(n)
 	return n
+
+
+## U-Bahn-Linie M1 zwischen Synth-City und Neo-Distrikt (levels/metro.gd)
+func _metro() -> void:
+	var m := Node3D.new()
+	m.set_script(METRO)
+	add_child(m)
 
 
 ## Fern-Kulisse hinter der Ostgrenze (levels/niko_kulisse.gd)

@@ -1,0 +1,37 @@
+CONTENTS -- PixelDrift Metro Free
+Maciej EmacArt
+================================================================
+
+OBJECT SCENES (total: 76)
+  Prefabs/Arch/Column (3)
+  Prefabs/Arch/Tunel/Exodus (1)
+  Prefabs/Arch/Wall/FPS/Wall (2)
+  Prefabs/Arch/Wall/FPS/Wall/2 (2)
+  Prefabs/Ground/Roof/Blue (2)
+  Prefabs/Ground/WorksPlace (2)
+  Prefabs/GroundDecor/Props (12)
+  Prefabs/GroundDecor/Rubbish (10)
+  Prefabs/GroundDecor/Wall (9)
+  Prefabs/RoofDecor/Pipe (2)
+  Prefabs/TechRoom/Arch (1)
+  Prefabs/TechRoom/Props (2)
+  Prefabs/TechRoom/euroPalet (2)
+  Prefabs/WallDecor/Cock (2)
+  Prefabs/WallDecor/Crate (2)
+  Prefabs/WallDecor/Destruction (1)
+  Prefabs/WallDecor/Electric (9)
+  Prefabs/WallDecor/Entry (1)
+  Prefabs/WallDecor/Light (3)
+  Prefabs/WallDecor/Pipe (7)
+  Prefabs/WallDecor/Props (1)
+
+ASSETS
+  Textures:       5
+  Meshes:         60
+  Source glTF:    58
+  Materials:      63
+  Demo scenes:    1
+
+TOTAL FILES IN PACK: 391
+
+================================================================
