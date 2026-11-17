@@ -89,3 +89,5 @@ Entschieden (2026-11-07): Iggy hat das Grimoire zerrissen, weil Magie-Strom sein
 83. Metro: Schnellreise laut Konzept ("Fahrzeug-Stationen, nach erstem Besuch freigeschaltet") ist das nicht, man faehrt mit. Reicht das, oder soll es zusaetzlich einen Sofort-Sprung geben?
 84. Metro: Waehrend der Fahrt ist die Eingabe ganz gesperrt (auch Umsehen). Soll man im Zug herumlaufen duerfen?
 85. Metro: Weitere Stationen (z. B. Runen-Plaza, Hafen) waeren mit `levels/metro_station.gd` machbar, die Strecke ist aber bisher ein gerader Pendeltunnel. Gewuenscht?
+86. Schwimmen: Bisher ist nur der Parkteich tief. Sollen auch die Fluesse tiefer werden (Loecher in Sohle und Gelaende entlang der ganzen Flusslaeufe)?
+87. Unterwasser: keine Luftanzeige, unbegrenzt tauchen. Gewuenscht (z. B. Luft-Balken, danach Herzverlust)?

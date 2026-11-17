@@ -10,6 +10,17 @@ const BANK_SITZ_HOEHE := 0.57  ## Oberkante der Sitzlatten (siehe _bank_vorlage)
 const GRENZE := Rect2(-164.0, -58.0, 108.0, 96.0)
 const TEICH_M := Vector2(-85.0, 14.0)
 const TEICH_R := Vector2(21.0, 13.0)
+## Teich als echte Mulde zum Schwimmen und Tauchen: Ufer laufen weich bis TEICH_TIEFE ab, Wasserspiegel TEICH_WASSER_Y.
+## Stadtplatte, Sohle und Gelaende haben darunter ein Rechteckloch (teich_loch(), abgefragt von stadt.gd).
+const TEICH_TIEFE := 4.0
+const TEICH_WASSER_Y := -0.35
+const TEICH_UFER := 1.0            ## Mulde reicht so weit ueber TEICH_R hinaus
+const TEICH_LOCH_RAND := 1.0
+const TEICH_STEIL_AB := 0.3        ## innerhalb dieses Radius-Anteils ist der Grund flach
+const TEICH_RINGE := 12
+const TEICH_SEGMENTE := 48
+const RASEN_Y := 0.08
+const RASEN_RECHTECK := Rect2(-170, -65, 120, 110)
 const PAV_POS: Array[Vector2] = [Vector2(-110, -8), Vector2(-138, 22), Vector2(-72, -38)]
 const PAV_R: Array[float] = [7.0, 5.5, 5.5]
 const KRONEN := [Color(1.0, 0.28, 0.72), Color(0.95, 0.35, 0.95), Color(0.62, 0.32, 1.0), Color(1.0, 0.5, 0.8), Color(0.78, 0.28, 0.9)]
@@ -196,9 +207,22 @@ func _kreis(mitte: Vector3, r: float, n := 28) -> Array[Vector3]:
 # ---------------------------------------------------------------- Rasen, Wege
 
 func _rasen() -> void:
-	var b := BoxMesh.new()
-	b.size = Vector3(120, 0.08, 110)
-	_mesh(b, m_rasen, Vector3(-110, 0.04, -10))
+	# Rasen in vier Streifen um das Teichloch (der Rest zwischen Loch und Mulde kommt in _teich)
+	var loch := teich_loch()
+	var a := RASEN_RECHTECK
+	for r: Rect2 in [Rect2(a.position.x, a.position.y, a.size.x, loch.position.y - a.position.y),
+			Rect2(a.position.x, loch.end.y, a.size.x, a.end.y - loch.end.y),
+			Rect2(a.position.x, loch.position.y, loch.position.x - a.position.x, loch.size.y),
+			Rect2(loch.end.x, loch.position.y, a.end.x - loch.end.x, loch.size.y)]:
+		var b := BoxMesh.new()
+		b.size = Vector3(r.size.x, RASEN_Y, r.size.y)
+		_mesh(b, m_rasen, Vector3(r.get_center().x, RASEN_Y * 0.5, r.get_center().y))
+
+
+## Rechteckloch unter dem Teich (fuer Stadtplatte, Sohle, Gelaende).
+static func teich_loch() -> Rect2:
+	var r := TEICH_R + Vector2.ONE * (TEICH_UFER + TEICH_LOCH_RAND)
+	return Rect2(TEICH_M - r, r * 2.0)
 
 
 
@@ -266,21 +290,135 @@ func _streifen(lauf: Array[Vector3], seite: float, cyan: bool) -> void:
 
 func _teich() -> void:
 	var c := Vector3(TEICH_M.x, 0.0, TEICH_M.y)
-	var rand := _mesh(_zyl_mesh(1.0, 1.0, 0.08, 40), m_stein, c + Vector3(0, 0.1, 0))
-	rand.scale = Vector3(TEICH_R.x + 1.8, 1.0, TEICH_R.y + 1.8)
-	var wm := ShaderMaterial.new()
-	wm.shader = load("res://wasser.gdshader")
-	var wasser := _mesh(_zyl_mesh(1.0, 1.0, 0.06, 40), wm, c + Vector3(0, 0.13, 0))
-	wasser.scale = Vector3(TEICH_R.x, 1.0, TEICH_R.y)
-	# Neon-Kante
-	var pts: Array[Vector3] = []
-	for i in 24:
-		var a := TAU * i / 24.0
-		pts.append(c + Vector3(cos(a) * (TEICH_R.x + 1.7), 0.16, sin(a) * (TEICH_R.y + 1.7)))
+	var ufer := TEICH_R + Vector2.ONE * TEICH_UFER
+	_teich_mulde(ufer)
+	_teich_rasenrand(ufer)
+	# Steinkante und Neonband um das Ufer
+	var stein: Array[Vector3] = []
+	var neon: Array[Vector3] = []
+	for i in 32:
+		var a := TAU * i / 32.0
+		stein.append(c + Vector3(cos(a) * (ufer.x + 0.5), RASEN_Y + 0.02, sin(a) * (ufer.y + 0.5)))
+		neon.append(c + Vector3(cos(a) * (ufer.x + 1.1), RASEN_Y + 0.06, sin(a) * (ufer.y + 1.1)))
+	var rand := MeshInstance3D.new()
+	rand.mesh = Geo.band(Geo.kurve(stein, false, 4), 1.0)
+	rand.material_override = m_stein
+	add_child(rand)
 	var mi := MeshInstance3D.new()
-	mi.mesh = Geo.band(Geo.kurve(pts, false, 4), 0.35)
+	mi.mesh = Geo.band(Geo.kurve(neon, false, 4), 0.35)
 	mi.material_override = m_neon_c
 	add_child(mi)
+	# Wasserflaeche (von oben und unten sichtbar) und Wasserzone fuers Schwimmen
+	var wm := ShaderMaterial.new()
+	wm.shader = load("res://wasser.gdshader")
+	var wasser := _mesh(_zyl_mesh(1.0, 1.0, 0.06, TEICH_SEGMENTE), wm, c + Vector3(0, TEICH_WASSER_Y - 0.03, 0))
+	wasser.scale = Vector3(ufer.x, 1.0, ufer.y)
+	var zone := Area3D.new()
+	zone.name = "TeichWasser"
+	zone.add_to_group("wasser")
+	zone.set_meta("oberflaeche", TEICH_WASSER_Y)
+	zone.monitorable = true
+	zone.monitoring = false
+	var punkte := PackedVector3Array()
+	for i in 24:
+		var a := TAU * i / 24.0
+		for y: float in [TEICH_WASSER_Y, -TEICH_TIEFE - 1.0]:
+			punkte.append(Vector3(cos(a) * ufer.x, y, sin(a) * ufer.y))
+	var form := ConvexPolygonShape3D.new()
+	form.points = punkte
+	var cs := CollisionShape3D.new()
+	cs.shape = form
+	zone.add_child(cs)
+	zone.position = c
+	add_child(zone)
+	zone.set_meta("oberflaeche", to_global(Vector3(0, TEICH_WASSER_Y, 0)).y)
+
+
+## Tiefe der Mulde bei Radius-Anteil s (0 Mitte, 1 Uferkante).
+func _teich_hoehe(s: float) -> float:
+	return lerpf(-TEICH_TIEFE, RASEN_Y, smoothstep(TEICH_STEIL_AB, 1.0, s))
+
+
+func _teich_mulde(ufer: Vector2) -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var c := Vector3(TEICH_M.x, 0.0, TEICH_M.y)
+	var punkt := func(s: float, i: int) -> Vector3:
+		var a := TAU * i / TEICH_SEGMENTE
+		return c + Vector3(cos(a) * ufer.x * s, _teich_hoehe(s), sin(a) * ufer.y * s)
+	for k in TEICH_RINGE:
+		var s0 := float(k) / TEICH_RINGE
+		var s1 := float(k + 1) / TEICH_RINGE
+		for i in TEICH_SEGMENTE:
+			var a0: Vector3 = punkt.call(s0, i)
+			var a1: Vector3 = punkt.call(s0, i + 1)
+			var b0: Vector3 = punkt.call(s1, i)
+			var b1: Vector3 = punkt.call(s1, i + 1)
+			for v in [a0, b1, b0, a0, a1, b1]:
+				st.set_uv(Vector2(v.x, v.z) * 0.25)
+				st.add_vertex(v)
+	st.generate_normals()
+	var grund := _std(Color(0.16, 0.2, 0.2), 0.0, 0.0, 0.9)
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = grund
+	add_child(mi)
+	var form := mi.mesh.create_trimesh_shape() as ConcavePolygonShape3D
+	form.backface_collision = true
+	var sb := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	cs.shape = form
+	sb.add_child(cs)
+	add_child(sb)
+
+
+## Rasen zwischen Teichloch (Rechteck) und Uferkante (Ellipse), mit Kollision (dort fehlt die Stadtplatte).
+func _teich_rasenrand(ufer: Vector2) -> void:
+	var loch := teich_loch()
+	var c := Vector2(TEICH_M.x, TEICH_M.y)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var innen := func(i: int) -> Vector3:
+		var a := TAU * i / TEICH_SEGMENTE
+		return Vector3(c.x + cos(a) * ufer.x, RASEN_Y, c.y + sin(a) * ufer.y)
+	var aussen := func(i: int) -> Vector3:
+		# Strahl von der Mitte bis zum Rechteckrand
+		var a := TAU * i / TEICH_SEGMENTE
+		var d := Vector2(cos(a), sin(a))
+		var tx := (loch.size.x * 0.5) / maxf(absf(d.x), 0.0001)
+		var tz := (loch.size.y * 0.5) / maxf(absf(d.y), 0.0001)
+		var p := c + d * minf(tx, tz)
+		return Vector3(p.x, RASEN_Y, p.y)
+	for i in TEICH_SEGMENTE:
+		var a0: Vector3 = innen.call(i)
+		var a1: Vector3 = innen.call(i + 1)
+		var b0: Vector3 = aussen.call(i)
+		var b1: Vector3 = aussen.call(i + 1)
+		for v in [a0, b0, b1, a0, b1, a1]:
+			st.set_normal(Vector3.UP)
+			st.set_uv(Vector2(v.x, v.z) * 0.3)
+			st.add_vertex(v)
+	# Ecken des Rechtecks: Strahlen zu den Segmentgrenzen lassen Zwickel offen, daher Eckdreiecke
+	for i in TEICH_SEGMENTE:
+		var b0: Vector3 = aussen.call(i)
+		var b1: Vector3 = aussen.call(i + 1)
+		if absf(b0.x - b1.x) > 0.01 and absf(b0.z - b1.z) > 0.01:
+			var ecke := Vector3(loch.end.x if b0.x > c.x else loch.position.x, RASEN_Y, loch.end.y if b0.z > c.y else loch.position.y)
+			for v in [b0, ecke, b1]:
+				st.set_normal(Vector3.UP)
+				st.set_uv(Vector2(v.x, v.z) * 0.3)
+				st.add_vertex(v)
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = m_rasen
+	add_child(mi)
+	var form := mi.mesh.create_trimesh_shape() as ConcavePolygonShape3D
+	form.backface_collision = true
+	var sb := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	cs.shape = form
+	sb.add_child(cs)
+	add_child(sb)
 
 
 # ---------------------------------------------------------------- Pavillons

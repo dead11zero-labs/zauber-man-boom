@@ -83,6 +83,7 @@ const RAMPE_LUECKE := 3.5        ## Gelaender-Luecke am oberen Ende einer Rampe
 const RAMPEN: Array = [[0, 3, 1.0], [0, 5, -1.0], [1, 3, -1.0], [1, 5, 1.0]]
 const PLATTE := 700.0            ## Kantenlaenge der Stadtplatte
 const METRO := preload("res://levels/metro.gd")
+const PARK := preload("res://park.gd")
 const MARKT_POS := Vector2(-100, 92)   ## Mitte des Neon-Markts 24/7 (Front nach Sueden)
 
 var rng := RandomNumberGenerator.new()
@@ -699,7 +700,7 @@ func _flaeche(bereich: Rect2, y: float, mat: Material, kollision: bool) -> MeshI
 	# Die Stadtplatte (y 0) bekommt Loecher fuer die Abgangs-Luke und den Metro-Abgang: Rechteckstreifen drumherum
 	var loecher: Array[Rect2] = []
 	if y == 0.0:
-		for loch in [_luken_loch()] + METRO.plattenloecher():
+		for loch in [_luken_loch(), PARK.teich_loch()] + METRO.plattenloecher():
 			if bereich.encloses(loch):
 				loecher.append(loch)
 	for r in _rechteck_ohne(bereich, loecher):
@@ -829,7 +830,7 @@ func _fluesse() -> void:
 	var m_gelaender := _std(Color(0.2, 0.22, 0.26), 0.0, 0.85, 0.35)
 	var m_gel_neon := _std(Color(0.2, 0.9, 1.0), 1.6)
 	# Sohle: eine Platte unter der ganzen Stadt, sichtbar nur in den Flusslaeufen (faengt auch alles auf, was faellt)
-	var sohle_loecher: Array[Rect2] = [_schacht_loch()]
+	var sohle_loecher: Array[Rect2] = [_schacht_loch(), PARK.teich_loch()]
 	sohle_loecher.append_array(METRO.sohlenloecher(-FLUSS_TIEFE - 1.0))
 	for r in _rechteck_ohne(Rect2(-PLATTE / 2.0, -PLATTE / 2.0, PLATTE, PLATTE), sohle_loecher):
 		_box(Vector3(r.get_center().x, -FLUSS_TIEFE - 0.5, r.get_center().y), Vector3(r.size.x, 1.0, r.size.y), m_sohle)
@@ -1691,7 +1692,7 @@ func _terrain_loch() -> void:
 		x += t.vertex_spacing
 	daten.update_maps(Terrain3DRegion.TYPE_HEIGHT, true, false)
 	# Metro-Abgaenge: Gelaende dort als Loch markieren (Flaeche und, nach dem Neuaufbau, auch die Kollision weg)
-	for loch in METRO.terrain_loecher(TerrainForm.UNTER):
+	for loch in METRO.terrain_loecher(TerrainForm.UNTER) + [PARK.teich_loch().grow(t.vertex_spacing)]:
 		var lx := snappedf(loch.position.x, t.vertex_spacing)
 		while lx <= loch.end.x:
 			var lz := snappedf(loch.position.y, t.vertex_spacing)

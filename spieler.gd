@@ -46,6 +46,16 @@ const BLITZ_SKRIPT := preload("res://blitz.gd")
 const EGO_ARM := preload("res://characters/ego_arm.gd")
 const EGO_AUGENHOEHE := 1.65
 const EGO_BLITZ_VERSATZ := Vector3(0.22, -0.18, -0.9)   ## Blitzstart vor der Hand (Kameraraum)
+## Schwimmen (characters/schwimmen.gd): in Wasserzonen, sobald die Brust unter dem Wasserspiegel liegt
+const SCHWIMMEN := preload("res://characters/schwimmen.gd")
+const SCHWIMM_BRUST := 1.2        ## Brusthoehe ueber den Fuessen
+const SCHWIMM_LAGE := 1.35        ## so tief liegen die Fuesse beim Treiben unter dem Wasserspiegel
+const SCHWIMM_TEMPO := 5.5
+const TAUCH_TEMPO := 3.5
+const AUFTRIEB := 2.5
+const WASSER_BREMSE := 8.0
+const AUSSTIEG_SPRUNG := 9.0      ## Sprung aus dem Wasser an der Oberflaeche
+const TAUCH_NEIGUNG := 0.5
 
 signal kristalle_geaendert(anzahl: int, gesamt: int)
 ## Ladeanteil 0..1 waehrend die Zaubertaste gehalten wird (HUD-Balken)
@@ -77,6 +87,8 @@ var _sperren: Dictionary = {}
 ## Kamera steckt dicht an der Figur (Wand im Ruecken): Modell ausblenden, sonst schaut man hinein
 var _kamera_nah := false
 var _ego := false
+var _schwimmen: Node3D
+var _schwimmt := false
 var _ego_arm: Node3D
 var _arm_pos_dritte := Vector3.ZERO
 var _arm_laenge_dritte := 3.2
@@ -103,6 +115,10 @@ func _ready():
 	_nick_standard = kamera_arm.rotation.x
 	_arm_pos_dritte = kamera_arm.position
 	_arm_laenge_dritte = kamera_arm.get("laenge")
+	_schwimmen = Node3D.new()
+	_schwimmen.set_script(SCHWIMMEN)
+	_schwimmen.visible = false
+	$Modell.add_child(_schwimmen)
 	_ego_arm = Node3D.new()
 	_ego_arm.set_script(EGO_ARM)
 	_ego_arm.visible = false
@@ -267,6 +283,14 @@ func _physics_process(delta):
 		rotate_y(-blick.x * STICK_DREHEN * delta - wisch.x)
 		kamera_arm.rotation.x = clampf(kamera_arm.rotation.x - blick.y * STICK_NICKEN * delta - wisch.y, NICK_MIN, NICK_MAX)
 	_klebt = maxf(_klebt - delta, 0.0)
+	_schwimmen.call("unterwasser_pruefen", (kamera_arm.get_node("Kamera") as Node3D).global_position)
+	var wasser: float = _schwimmen.call("wasser_bei", global_position + Vector3.UP * SCHWIMM_BRUST)
+	_schwimmt = not is_nan(wasser) and global_position.y + SCHWIMM_BRUST < wasser
+	if _schwimmt:
+		_schwimm_physik(delta, vorwaerts, wasser, gesperrt)
+		_zauber_verarbeiten(delta, gesperrt)
+		return
+	_schwimmen.visible = false
 	var richtung = -transform.basis.z * vorwaerts * SPEED * (0.4 if _klebt > 0.0 else 1.0)
 	if not gesperrt and Input.is_action_just_pressed("dash") and _dash_pause <= 0.0:
 		_dash_starten(vorwaerts)
@@ -318,6 +342,48 @@ func _physics_process(delta):
 	if _ego:
 		_ego_arm.call("wippen_setzen", absf(vorwaerts) if is_on_floor() else 0.0)
 
+	_zauber_verarbeiten(delta, gesperrt)
+
+
+## Im Wasser: Vortrieb, Auftrieb bis zur Treibhoehe, Tauchen (Dash) und Auftauchen (Sprung), Kraul-Animation.
+func _schwimm_physik(delta: float, vorwaerts: float, wasser: float, gesperrt: bool) -> void:
+	_schwebt = false
+	_sprung_aktiv = false
+	_dash_zeit = 0.0
+	_luftzeit = 0.0
+	var h := -transform.basis.z * vorwaerts * SCHWIMM_TEMPO * (0.4 if _klebt > 0.0 else 1.0)
+	_rueckstoss = _rueckstoss.move_toward(Vector3.ZERO, RUECKSTOSS_ABBAU * delta)
+	velocity.x = h.x + _rueckstoss.x
+	velocity.z = h.z + _rueckstoss.z
+	var treib_y := wasser - SCHWIMM_LAGE
+	var hoch := 0.0
+	if not gesperrt:
+		if Input.is_action_pressed("springen"):
+			hoch += 1.0
+		if Input.is_action_pressed("dash"):
+			hoch -= 1.0
+	if hoch > 0.0 and Input.is_action_just_pressed("springen") and global_position.y >= treib_y - 0.2:
+		velocity.y = AUSSTIEG_SPRUNG
+	elif hoch != 0.0:
+		velocity.y = move_toward(velocity.y, hoch * TAUCH_TEMPO, WASSER_BREMSE * delta)
+	else:
+		velocity.y = move_toward(velocity.y, clampf((treib_y - global_position.y) * AUFTRIEB, -TAUCH_TEMPO, TAUCH_TEMPO), WASSER_BREMSE * delta)
+	move_and_slide()
+	modell_lauf.visible = false
+	modell_stehen.visible = false
+	modell_sprung.visible = false
+	_schwimmen.visible = true
+	_schwimmen.call("pose", delta, absf(vorwaerts), -velocity.y / TAUCH_TEMPO * TAUCH_NEIGUNG)
+	if _ego:
+		_ego_arm.call("wippen_setzen", absf(vorwaerts) * 0.6)
+
+
+func ist_am_schwimmen() -> bool:
+	return _schwimmt
+
+
+## Zaubertaste: Laden bei gehaltener Taste, Blitz beim Loslassen.
+func _zauber_verarbeiten(delta: float, gesperrt: bool) -> void:
 	_zauber_timer -= delta
 	var maus_schuss := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	var zauber_gehalten := (Input.is_action_pressed("zaubern") or maus_schuss) and not gesperrt
