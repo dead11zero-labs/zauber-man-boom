@@ -1,15 +1,22 @@
 extends Node3D
 ## Untergrund-Komplex "SUB-ARCHIV Omega": geheime Mega-Struktur unter dem Stadtrand, gebaut aus dem
-## Modular SciFi MegaKit (levels/megakit.gd, CC0). Zugang ist der Treppenschacht unter der 6twelve-Filiale
-## (levels/sechs_zwoelf.gd, geoeffnet durch Anheben des Teppichs im Lagerraum).
-## Ursprung dieses Knotens: obere NW-Ecke des Schachts auf Strassenniveau (y = 0). Der Schacht liegt bei
-## x 0..4, z -4..8, die Haupttreppe beginnt bei z 0 (Abstieg nach +z). Der Komplex liegt nach Norden (-z)
-## und zu beiden Seiten, Boden bei y = BODEN_Y.
+## Modular SciFi MegaKit (levels/megakit.gd, CC0). Zugang ist der Lastenaufzug (levels/lastenaufzug.gd) direkt
+## unter der Luke der 6twelve-Filiale (levels/sechs_zwoelf.gd, geoeffnet durch Anheben des Teppichs im Lagerraum).
+## Ursprung dieses Knotens: NW-Ecke der Luke auf Strassenniveau (y = 0). Der Aufzugsschacht liegt bei
+## x 0..AUFZUG_GROESSE.x, z 0..AUFZUG_GROESSE.y; unten fuehrt seine Tuer nach Norden in den Vorraum (z -4..0).
+## Der Komplex liegt nach Norden (-z) und zu beiden Seiten, Boden bei y = BODEN_Y.
+## Signale: aufzug_oben (Plattform ist oben angekommen; stadt.gd oeffnet damit die Luke von unten).
+## Methode: aufzug_freigeben() (stadt.gd ruft sie, sobald die Luke offen ist).
 ## Aufbau: Textkarte KARTE (Zelle = 4 m). '#' fest, '.' Raum (5,05 m hoch), 'H' Halle (8,1 m), 'd' Tuerzelle,
 ## 'V' Schachtzelle. Waende sitzen auf den Kanten zwischen Raum und Fels; Kollision aus einfachen Boxen.
-## Exportiert: nichts. Signale: keine. Beleuchtung nur durch eigene Lampen (kein Himmelslicht).
+## Exportiert: nichts. Beleuchtung nur durch eigene Lampen (kein Himmelslicht).
+
+signal aufzug_oben
 
 const MK := preload("res://levels/megakit.gd")
+const AUFZUG := preload("res://levels/lastenaufzug.gd")
+const AUFZUG_GROESSE := Vector2(2.15, 4.2)   ## = Lukengroesse in levels/sechs_zwoelf.gd (LUKE_X, LUKE_Z)
+const AUFZUG_OBEN_Y := -0.08                 ## Plattform knapp unter dem Lukendeckel
 
 const ZELLE := 4.0
 const BODEN_Y := -16.0
@@ -18,10 +25,7 @@ const RAUM_H := 5.05              ## Wand plus Top-Stueck
 const HALLE_H := 8.1
 const WAND_KOL_DICKE := 0.9       ## Kollisionsbox der Wand, mittig auf der Kante (sichtbare Innenflaeche liegt 0,45 m davor)
 const SCHACHT_SPALTE := 12        ## Spalte der Schachtzellen in der Karte
-const SCHACHT_ZEILE := 19         ## Zeile der mittleren Schachtzelle (x 0..4, z 0..4)
-const STUFE_DROP := 2.0           ## Platform_Stairs_4: Hoehe und Laenge der Stufenteile
-const STUFE_LAUF := 4.1
-const STUFEN_ANZAHL := 8          ## 8 x 2 m = 16 m Abstieg
+const SCHACHT_ZEILE := 19         ## Zeile der Aufzugszelle (x 0..4, z 0..4)
 const LICHT_STANDARD := Color(0.75, 0.9, 1.0)
 const LICHT_HALLE := Color(0.55, 0.85, 1.0)
 const LICHT_ALARM := Color(1.0, 0.35, 0.25)
@@ -45,9 +49,9 @@ const KARTE: Array[String] = [
 	"#####....d.....d....####",
 	"#####....###d###....####",
 	"#####....###.###....####",
+	"############.###########",
 	"############V###########",
-	"############V###########",
-	"############V###########",
+	"########################",
 	"########################",
 ]
 
@@ -58,6 +62,7 @@ const WAENDE_RAUM: Array[String] = ["WallAstra_Straight", "WallAstra_Straight_Di
 
 var _licht_mat: StandardMaterial3D
 var _decke_mat: StandardMaterial3D
+var _aufzug: Node3D
 
 
 func _ready() -> void:
@@ -239,42 +244,31 @@ func _tuer(c: int, r: int, m: Vector3) -> void:
 # ---------------------------------------------------------------- Schacht
 
 func _schacht_bauen() -> void:
-	# Fluege: gerade Fluege laufen auf Spur A (x 0..2) nach +z, ungerade auf Spur B (x 2..4) nach -z.
-	for k in STUFEN_ANZAHL:
-		var y_oben := -STUFE_DROP * k
-		var spur_x := 1.0 if k % 2 == 0 else 3.0
-		if k % 2 == 0:
-			_teil("Platforms", "Platform_Stairs_4", Vector3(spur_x, y_oben - STUFE_DROP, 0.0), 0.0)
-			_teil("Platforms", "Platform_Metal", Vector3(2.0, y_oben - STUFE_DROP, 6.0))   # Podest Sued (z 4..8)
-			_kol(Vector3(2.0, y_oben - STUFE_DROP - 0.25, 6.0), Vector3(ZELLE, 0.5, ZELLE))
-		else:
-			_teil("Platforms", "Platform_Stairs_4", Vector3(spur_x, y_oben - STUFE_DROP, STUFE_LAUF), 180.0)
-			_teil("Platforms", "Platform_Metal", Vector3(2.0, y_oben - STUFE_DROP, -2.0))  # Podest Nord (z -4..0)
-			_kol(Vector3(2.0, y_oben - STUFE_DROP - 0.25, -2.0), Vector3(ZELLE, 0.5, ZELLE))
-		# Rampe als glatte Kollision unter den Stufen (Stufen sind nur Optik)
-		var winkel := atan2(STUFE_DROP, STUFE_LAUF)
-		var laenge := sqrt(STUFE_LAUF * STUFE_LAUF + STUFE_DROP * STUFE_DROP)
-		var z_mitte := STUFE_LAUF * 0.5
-		var y_mitte := y_oben - STUFE_DROP * 0.5 - 0.15 / cos(winkel)
-		# Drehung um x mit positivem Winkel senkt die +z-Seite: gerade Fluege fallen nach +z, ungerade nach -z
-		var dreh := Vector3(winkel if k % 2 == 0 else -winkel, 0, 0)
-		_kol(Vector3(spur_x, y_mitte, z_mitte), Vector3(2.0, 0.3, laenge + 0.1), dreh)
-		_lampe(Vector3(2.0, y_oben - 0.5, 2.0), LICHT_STANDARD if k % 2 == 0 else LICHT_HALLE, 1.4, 9.0)
-	# Schachtwaende (Stapel) auf West-, Ost- und Suedkante aller drei Zellen, Nordkante erst ab dem ersten Podest
-	# Nur ganze Reihen unterhalb des Strassenniveaus: sonst ragt die oberste Wandreihe durch den Ladenboden
-	var reihen := int(floor(absf(BODEN_Y) / WAND_H))
-	for i in reihen:
-		var y := BODEN_Y + i * WAND_H
-		for z in [-2.0, 2.0, 6.0]:
-			_teil("Walls", "WallAstra_Straight", Vector3(2.0, y, z), 0.0)      # Westkante x = 0
-			_teil("Walls", "WallAstra_Straight", Vector3(2.0, y, z), 180.0)    # Ostkante x = 4
-		_teil("Walls", "WallAstra_Straight", Vector3(2.0, y, 6.0), 90.0)       # Suedkante z = 8
-		if y >= BODEN_Y + STUFE_DROP * 2.0:
-			_teil("Walls", "WallAstra_Straight", Vector3(2.0, y, -2.0), -90.0) # Nordkante z = -4 (erst ab dem ersten Podest)
-	_kol(Vector3(0.0, BODEN_Y * 0.5, 2.0), Vector3(WAND_KOL_DICKE, absf(BODEN_Y), 12.2))
-	_kol(Vector3(4.0, BODEN_Y * 0.5, 2.0), Vector3(WAND_KOL_DICKE, absf(BODEN_Y), 12.2))
-	_kol(Vector3(2.0, BODEN_Y * 0.5, 8.0), Vector3(4.2, absf(BODEN_Y), WAND_KOL_DICKE))
-	_kol(Vector3(2.0, BODEN_Y * 0.5 + 2.0, -4.0), Vector3(4.2, absf(BODEN_Y) - 4.0, WAND_KOL_DICKE))
+	_aufzug = Node3D.new()
+	_aufzug.name = "Lastenaufzug"
+	_aufzug.set_script(AUFZUG)
+	_aufzug.set("oben_y", AUFZUG_OBEN_Y)
+	_aufzug.set("unten_y", BODEN_Y)
+	_aufzug.set("groesse", AUFZUG_GROESSE)
+	add_child(_aufzug)
+	_aufzug.connect("oben_angekommen", func() -> void: aufzug_oben.emit())
+	# Rest der Aufzugszelle (x AUFZUG_GROESSE.x..4) ist Fels: Wand zum Vorraum, sonst schaut man ins Leere
+	var rest_x := ZELLE - AUFZUG_GROESSE.x
+	var mitte := Vector3(AUFZUG_GROESSE.x + rest_x * 0.5, BODEN_Y + RAUM_H * 0.5, -0.2)
+	var wand := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(rest_x, RAUM_H, 0.4)
+	wand.mesh = bm
+	wand.material_override = _decke_mat
+	wand.position = mitte
+	add_child(wand)
+	_kol(mitte, bm.size)
+	_teil("Decals", "Decal_Line_Straight", Vector3(AUFZUG_GROESSE.x * 0.5, BODEN_Y + 0.02, -2.0), 90.0)
+
+
+func aufzug_freigeben() -> void:
+	if _aufzug != null:
+		_aufzug.call("freigeben")
 
 
 # ---------------------------------------------------------------- Ausstattung

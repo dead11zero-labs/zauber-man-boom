@@ -401,7 +401,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Zieht den Teppich weg und klappt die Luke auf (einmalig).
 func luke_oeffnen() -> void:
-	if _offen:
+	if _offen or _luke_dreh == null:
 		return
 	_offen = true
 	GameState.flag_setzen(FLAG_ENTDECKT)

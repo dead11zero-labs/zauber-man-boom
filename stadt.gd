@@ -29,10 +29,9 @@ const LADEN_DREH := 180.0
 const LADEN_PARKPLATZ_X := Vector2(-17.1, 7.4)   ## Parkplatz im Modellraum (x von..bis)
 const LADEN_PARKPLATZ_Z := 4.3                    ## vordere Parkplatzkante im Modellraum
 const LADEN_ZUFAHRT_Z0 := 203.5                   ## Fahrbahnrand des Schattenkais (Welt-z)
-const SCHACHT_LAENGE := 12.2      ## Schacht-Grundflaeche x 0..4, z -4..8,2 ab Abgangspunkt (levels/untergrund.gd)
-const SCHACHT_BREITE := 4.0
+## Aufzugsschacht unter der Luke (levels/untergrund.gd, AUFZUG_GROESSE): Grundflaeche ab Abgangspunkt
+const SCHACHT_RAND := 0.5         ## so viel groesser ist das Loch der Sohle (die Schachtwaende laufen hindurch)
 const TERRAIN_SCHACHT_Y := -40.0   ## Gelaendehoehe unter dem Schacht (unter dem Komplex)
-const SCHACHT_VORLAUF := 4.0
 const TANK_RADIUS := 13.0
 const TANK_STUETZE_H := 8.0
 const TANK_STUETZE_ABSTAND := 8.0   ## Stuetzen stehen bei +-8 m (Diagonale 11,3 m, innerhalb des Tankradius)
@@ -728,18 +727,16 @@ func _abgang_pos() -> Vector2:
 	return LADEN_POS - Vector2(sz.LUKE_X.y, sz.LUKE_Z.y)
 
 
-## Loch in der Stadtplatte ueber beiden Treppenspuren (liegt ganz unter dem Fliesenboden des Ladens, der selbst
-## nur ueber der ersten Spur offen ist).
+## Loch in der Stadtplatte genau unter der Luke (darunter liegt der Aufzugsschacht).
 func _luken_loch() -> Rect2:
 	var sz := load("res://levels/sechs_zwoelf.gd")
 	var o := _abgang_pos()
-	return Rect2(o.x, o.y, SCHACHT_BREITE, sz.LUKE_Z.y - sz.LUKE_Z.x)
+	return Rect2(o.x, o.y, sz.LUKE_X.y - sz.LUKE_X.x, sz.LUKE_Z.y - sz.LUKE_Z.x)
 
 
-## Loch der Sohle: ganze Schachtflaeche (die Waende laufen durch die Sohle).
+## Loch der Sohle: Aufzugsschacht plus Rand (die Schachtwaende laufen durch die Sohle).
 func _schacht_loch() -> Rect2:
-	var o := _abgang_pos()
-	return Rect2(o.x - 0.5, o.y - SCHACHT_VORLAUF - 0.5, SCHACHT_BREITE + 1.0, SCHACHT_LAENGE + 1.0)
+	return _luken_loch().grow(SCHACHT_RAND)
 
 
 func _polygon_mesh(teile: Array[PackedVector2Array], y: float, mat: Material, kollision: bool) -> MeshInstance3D:
@@ -1639,9 +1636,12 @@ func _oeffentliche_gebaeude() -> void:
 func _laden_und_abgang() -> void:
 	# Zufahrt: Asphalt vom Fahrbahnrand des Schattenkais bis zur Parkplatzkante, ueber die ganze Parkplatzbreite
 	_flaeche(Rect2(LADEN_POS.x - LADEN_PARKPLATZ_X.y, LADEN_ZUFAHRT_Z0, LADEN_PARKPLATZ_X.y - LADEN_PARKPLATZ_X.x, LADEN_POS.y - LADEN_PARKPLATZ_Z - LADEN_ZUFAHRT_Z0 + 0.3), 0.05, _aussen_mat("strasse_asphalt", STRASSE_KACHEL, Color(0.28, 0.28, 0.3), 0.0), false)
-	_haus_skript("res://levels/sechs_zwoelf.gd", Vector3(LADEN_POS.x, 0.0, LADEN_POS.y), LADEN_DREH)
+	var laden := _haus_skript("res://levels/sechs_zwoelf.gd", Vector3(LADEN_POS.x, 0.0, LADEN_POS.y), LADEN_DREH)
 	var o := _abgang_pos()
-	_haus_skript("res://levels/untergrund.gd", Vector3(o.x, 0.0, o.y), 0.0)
+	var ug := _haus_skript("res://levels/untergrund.gd", Vector3(o.x, 0.0, o.y), 0.0)
+	# Luke offen -> Aufzug darf oben losfahren; Aufzug von unten oben angekommen -> Luke geht auf
+	laden.connect("abgang_geoeffnet", Callable(ug, "aufzug_freigeben"))
+	ug.connect("aufzug_oben", Callable(laden, "luke_oeffnen"))
 	_terrain_loch.call_deferred()
 
 
@@ -1674,12 +1674,13 @@ func _terrain_loch() -> void:
 		kol.build()
 
 
-func _haus_skript(skript: String, pos: Vector3, dreh: float) -> void:
+func _haus_skript(skript: String, pos: Vector3, dreh: float) -> Node3D:
 	var n := Node3D.new()
 	n.set_script(load(skript))
 	n.position = pos
 	n.rotation_degrees.y = dreh
 	add_child(n)
+	return n
 
 
 ## Fern-Kulisse hinter der Ostgrenze (levels/niko_kulisse.gd)
